@@ -60,6 +60,8 @@ essa configuração nem volte para `forks` sem testar antes.
 src/
   types/index.ts         # TODO o modelo de dados (Teacher, Course, Holiday, ClassGroup, TimeSlot, ...)
   constants/schedule.ts    # ALLOWED_TIME_SLOTS (horários estritos permitidos), labels de dias da semana
+  constants/brand.ts     # BRAND_COLORS institucionais (extraídos da logo), ver seção "Identidade institucional"
+  composables/useTheme.ts   # preferência de tema claro/escuro/sistema, aplica classe .dark no <html>
   services/            # lógica de negócio pura (sem Vue, testável isoladamente)
     calendarEngine.ts     # calcula data de término e distribuição mensal de aulas
     holidayEngine.ts      # feriados nacionais (fixos + móveis via algoritmo de Gauss para Páscoa)
@@ -72,7 +74,7 @@ src/
   composables/useLocalStorage.ts # helpers de leitura/escrita/persistência automática no localStorage
   components/forms/       # ClassGroupForm, CourseForm, TeacherForm, HolidayForm, RoomForm
   components/calendar/     # MonthlyBreakdown (tabela), ClassCalendarView (visões dia/semana/mês/semestre/ano, colorido por professor)
-  components/shared/      # BackupControls (export/import JSON), AppMaintenanceControls (limpar dados + forçar atualização), ConflictWarning (professor/sala), CapacityWarning (capacidade excedida)
+  components/shared/      # BackupControls (export/import JSON), AppMaintenanceControls (limpar dados + forçar atualização), ConflictWarning (professor/sala), CapacityWarning (capacidade excedida), ThemeToggle (claro/escuro/sistema)
   views/               # DashboardView, CoursesView, ClassGroupsView, TeachersView, HolidaysView, RoomsView
   router/index.ts
 tests/unit/*.spec.ts       # testes dos services/ (ver seção "Regra de testes" abaixo)
@@ -95,6 +97,46 @@ site e na capa do PDF do manual do usuário (`generateUserManualPdf`), via `INST
 Se o arquivo for removido, a geração do PDF não quebra — cai automaticamente em um espaço
 reservado com o texto "Logo SENAC" no lugar da imagem (`tryLoadImageAsDataUrl` retorna `null`
 silenciosamente em qualquer falha de carregamento).
+
+### Paleta de cores institucionais
+
+`src/constants/brand.ts` define `BRAND_COLORS` com os valores extraídos **diretamente dos pixels**
+de `public/senac-logo.png` (decodificação de PNG feita manualmente, não estimativa visual):
+azul `#0050a0` (`blue`) e laranja `#f89020` (`orange`), com variantes `blueDark`/`blueHover` para
+hover e tema escuro. Os mesmos valores estão registrados em `src/style.css` via `@theme` do
+Tailwind v4 (`--color-brand-blue`, etc.), mas a maioria dos componentes hoje usa o hex literal
+diretamente em classes arbitrárias (`bg-[#0050a0]`) em vez do utilitário `bg-brand-blue` — ambos
+funcionam, mas prefira `bg-brand-blue`/`border-brand-orange` em código novo, por consistência.
+
+**Uso é deliberadamente sutil** (pedido explícito do usuário: "nada muito carregado, apenas para
+reconhecimento"): o azul substitui `bg-slate-900`/`hover:bg-slate-700` apenas em elementos de
+AÇÃO PRIMÁRIA (botões "Salvar", "+ Novo X", item de menu ativo, checkbox de dia da semana
+selecionado) — nunca em fundos de página ou blocos grandes. O laranja aparece só como uma borda
+de 2px no topo da sidebar (`App.vue`, `border-t-2 border-t-[#f89020]`) — nunca como fundo de
+texto, porque o contraste de `#f89020` sobre branco é insuficiente para leitura (2.33:1, abaixo do
+mínimo WCAG AA de 4.5:1). O azul `#0050a0` sobre branco passa com folga (7.91:1, quase AAA).
+
+## Tema claro/escuro/sistema
+
+`src/composables/useTheme.ts` gerencia a preferência de tema (`"light" | "dark" | "system"`),
+persistida no localStorage (chave `horarios-senac:theme`) e aplicada como classe `.dark` no
+`<html>`. **Chamado uma vez em `main.ts` antes de montar a árvore Vue**, para aplicar a classe
+correta antes da primeira renderização e evitar flash de tema errado — não remova essa chamada
+nem a mova para depois do `mount()`.
+
+`src/style.css` declara `@custom-variant dark (&:where(.dark, .dark *));`, que faz a variante
+`dark:` do Tailwind v4 reagir à classe `.dark` (não apenas a `prefers-color-scheme`, que é o
+padrão do Tailwind). Quando a preferência é `"system"`, o composable escuta
+`matchMedia("(prefers-color-scheme: dark)")` e reage a mudanças em tempo real.
+
+`src/components/shared/ThemeToggle.vue` é o seletor de tema (três botões com símbolos ☀/☾/⚙ e
+`aria-label`/`title` descritivos), fixo na sidebar. **Todo componente novo com cor de fundo/texto/
+borda estática deve incluir o par `dark:` correspondente** — o padrão de mapeamento usado em todo
+o projeto (`bg-white` → `dark:bg-slate-800`, `text-slate-800` → `dark:text-slate-100`,
+`border-slate-200` → `dark:border-slate-700`, badges de status → `dark:bg-{cor}-900/40
+dark:text-{cor}-300`, etc.) está documentado no histórico de commits e pode ser inferido de
+qualquer view existente (ex: `TeachersView.vue`). Cores dinâmicas via `:style` (cor do professor
+no calendário) não precisam de `dark:` — já funcionam em ambos os temas.
 
 ## Modelo de dados (resumo — ver `src/types/index.ts` para os tipos completos)
 
@@ -167,8 +209,9 @@ repositório no GitHub mudar, esse valor precisa mudar junto.
 
 ## Status do projeto
 
-**MVP completo e funcional**, com módulo de espaços físicos (13/08/2026). Todas as telas,
-serviços e testes descritos neste documento existem e passam:
+**MVP completo e funcional**, com módulo de espaços físicos, identidade visual institucional
+sutil e tema claro/escuro/sistema (13/08/2026). Todas as telas, serviços e testes descritos neste
+documento existem e passam:
 
 - `npx vue-tsc -b --noEmit` — sem erros de tipo
 - `npx vitest run` — 33 testes, 4 arquivos, todos passando
@@ -190,6 +233,8 @@ Implementado:
 - Sidebar responsiva (drawer off-canvas em mobile/tablet)
 - `.github/workflows/deploy.yml` (build + test + deploy no push em `main`)
 - `docs/MANUAL-DO-USUARIO.md` + `src/content/userManual.ts`
+- Cores institucionais do SENAC (`src/constants/brand.ts`) aplicadas de forma sutil (botões de ação primária, item de menu ativo, borda de acento) em todas as views/formulários
+- Tema claro/escuro/sistema (`useTheme.ts` + `ThemeToggle.vue`), com `dark:` aplicado em todos os 18 componentes/views do projeto
 
 **Pendente / próximos passos possíveis** (não implementado ainda, não assumir que existe):
 - Testes de componente (`@vue/test-utils`) — hoje a suite cobre só `services/`, que é o núcleo crítico

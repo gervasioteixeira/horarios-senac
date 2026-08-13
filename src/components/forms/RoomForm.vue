@@ -52,30 +52,30 @@ function handleSubmit(): void {
 <template>
   <form class="space-y-4" @submit.prevent="handleSubmit">
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="room-name">Nome do espaço *</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="room-name">Nome do espaço *</label>
       <input
         id="room-name"
         v-model="form.name"
         type="text"
         required
         placeholder='Ex: "Sala 3" ou "Laboratório de Informática 1"'
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="room-location">Localização</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="room-location">Localização</label>
       <input
         id="room-location"
         v-model="form.location"
         type="text"
         placeholder='opcional, ex: "Bloco A, 2º andar"'
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="room-capacity">Capacidade (nº de alunos) *</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="room-capacity">Capacidade (nº de alunos) *</label>
       <input
         id="room-capacity"
         v-model.number="form.capacity"
@@ -83,26 +83,26 @@ function handleSubmit(): void {
         min="1"
         step="1"
         required
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none sm:w-48"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:w-48"
       />
     </div>
 
     <div class="flex items-center gap-2">
-      <input id="room-active" v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
-      <label for="room-active" class="text-sm font-medium text-slate-700">Ativo</label>
+      <input id="room-active" v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-slate-300 dark:border-slate-600" />
+      <label for="room-active" class="text-sm font-medium text-slate-700 dark:text-slate-300">Ativo</label>
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
       <button
         type="button"
-        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
         @click="emit('cancel')"
       >
         Cancelar
       </button>
       <button
         type="submit"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
       >
         Salvar
       </button>

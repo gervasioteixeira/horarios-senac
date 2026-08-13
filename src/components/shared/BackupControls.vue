@@ -73,21 +73,21 @@ async function handleFileSelected(event: Event): Promise<void> {
     <div class="flex items-center gap-2">
       <button
         type="button"
-        class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
         @click="handleDownload"
       >
         ⬇ Baixar backup
       </button>
       <button
         type="button"
-        class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
         @click="triggerImport"
       >
         ⬆ Importar backup
       </button>
       <input ref="fileInput" type="file" accept="application/json,.json" class="hidden" @change="handleFileSelected" />
     </div>
-    <p v-if="importError" class="text-xs text-red-600">{{ importError }}</p>
-    <p v-if="importSuccess" class="text-xs text-emerald-600">Backup importado com sucesso.</p>
+    <p v-if="importError" class="text-xs text-red-600 dark:text-red-400">{{ importError }}</p>
+    <p v-if="importSuccess" class="text-xs text-emerald-600 dark:text-emerald-400">Backup importado com sucesso.</p>
   </div>
 </template>

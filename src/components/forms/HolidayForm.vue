@@ -58,21 +58,21 @@ function handleSubmit(): void {
   <form class="space-y-4" @submit.prevent="handleSubmit">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="holiday-date">Data *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="holiday-date">Data *</label>
         <input
           id="holiday-date"
           v-model="form.date"
           type="date"
           required
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="holiday-scope">Tipo *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="holiday-scope">Tipo *</label>
         <select
           id="holiday-scope"
           v-model="form.scope"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         >
           <option v-for="opt in scopeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>
@@ -80,20 +80,20 @@ function handleSubmit(): void {
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="holiday-name">Nome *</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="holiday-name">Nome *</label>
       <input
         id="holiday-name"
         v-model="form.name"
         type="text"
         required
         placeholder="Ex: Aniversário da cidade"
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
     </div>
 
     <div class="flex items-center gap-2">
-      <input id="holiday-recurring" v-model="form.recurring" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
-      <label for="holiday-recurring" class="text-sm font-medium text-slate-700">
+      <input id="holiday-recurring" v-model="form.recurring" type="checkbox" class="h-4 w-4 rounded border-slate-300 dark:border-slate-600" />
+      <label for="holiday-recurring" class="text-sm font-medium text-slate-700 dark:text-slate-300">
         Recorrente (repete todo ano nesta mesma data)
       </label>
     </div>
@@ -101,14 +101,14 @@ function handleSubmit(): void {
     <div class="flex justify-end gap-2 pt-2">
       <button
         type="button"
-        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
         @click="emit('cancel')"
       >
         Cancelar
       </button>
       <button
         type="submit"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
       >
         Salvar
       </button>

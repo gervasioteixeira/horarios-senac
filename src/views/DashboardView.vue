@@ -87,13 +87,13 @@ const stats = computed(() => [
 <template>
   <div class="space-y-8">
     <div>
-      <h2 class="text-xl font-semibold text-slate-800">Painel</h2>
-      <p class="text-sm text-slate-500">Visão geral do sistema de horários.</p>
+      <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Painel</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Visão geral do sistema de horários.</p>
     </div>
 
-    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
       <p class="font-medium">⚠ Os dados ficam salvos apenas neste navegador, neste computador.</p>
-      <p class="mt-1 text-amber-700">
+      <p class="mt-1 text-amber-700 dark:text-amber-400">
         Nada é enviado para nenhum servidor. Se precisar acessar em outro computador ou outro
         navegador, use <strong>Baixar backup</strong> no menu lateral para exportar os dados e
         <strong>Importar backup</strong> no outro navegador para restaurá-los. Recomendamos fazer
@@ -107,51 +107,51 @@ const stats = computed(() => [
         v-for="stat in stats"
         :key="stat.label"
         :to="stat.to"
-        class="rounded-lg border border-slate-200 bg-white p-5 hover:border-slate-400"
+        class="rounded-lg border border-slate-200 bg-white p-5 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-500"
       >
-        <p class="text-sm text-slate-500">{{ stat.label }}</p>
-        <p class="mt-1 text-3xl font-semibold text-slate-900">{{ stat.value }}</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">{{ stat.label }}</p>
+        <p class="mt-1 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ stat.value }}</p>
       </RouterLink>
     </div>
 
-    <div class="rounded-lg border border-slate-200 bg-white p-5">
-      <h3 class="mb-4 text-base font-semibold text-slate-800">Próximas aulas desta semana</h3>
-      <div v-if="upcomingThisWeek.length === 0" class="py-6 text-center text-sm text-slate-400">
+    <div class="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+      <h3 class="mb-4 text-base font-semibold text-slate-800 dark:text-slate-100">Próximas aulas desta semana</h3>
+      <div v-if="upcomingThisWeek.length === 0" class="py-6 text-center text-sm text-slate-400 dark:text-slate-500">
         Nenhuma aula prevista para esta semana.
       </div>
-      <ul v-else class="divide-y divide-slate-100">
+      <ul v-else class="divide-y divide-slate-100 dark:divide-slate-700">
         <li v-for="(item, idx) in upcomingThisWeek" :key="`${item.classGroupId}-${item.date}-${idx}`" class="flex items-center justify-between py-3">
           <div class="flex items-center gap-3">
-            <span class="inline-block h-3 w-3 rounded-full border border-slate-300" :style="{ backgroundColor: item.teacherColor }" />
+            <span class="inline-block h-3 w-3 rounded-full border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: item.teacherColor }" />
             <div>
-              <p class="text-sm font-medium text-slate-800">{{ item.classGroupName }}</p>
-              <p class="text-xs text-slate-500">{{ item.courseName }} · {{ item.teacherName }}</p>
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ item.classGroupName }}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ item.courseName }} · {{ item.teacherName }}</p>
             </div>
           </div>
-          <div class="text-right text-xs text-slate-500">
-            <p class="font-medium text-slate-700">{{ formatDate(item.date) }}</p>
+          <div class="text-right text-xs text-slate-500 dark:text-slate-400">
+            <p class="font-medium text-slate-700 dark:text-slate-300">{{ formatDate(item.date) }}</p>
             <p>{{ item.timeSlotText }}<template v-if="item.roomName"> · {{ item.roomName }}</template></p>
           </div>
         </li>
       </ul>
     </div>
 
-    <div class="rounded-lg border border-slate-200 bg-white p-5">
-      <h3 class="mb-4 text-base font-semibold text-slate-800">Atalhos</h3>
+    <div class="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+      <h3 class="mb-4 text-base font-semibold text-slate-800 dark:text-slate-100">Atalhos</h3>
       <div class="flex flex-wrap gap-3">
-        <RouterLink to="/turmas" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+        <RouterLink to="/turmas" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
           Gerenciar turmas
         </RouterLink>
-        <RouterLink to="/cursos" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+        <RouterLink to="/cursos" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
           Gerenciar cursos
         </RouterLink>
-        <RouterLink to="/professores" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+        <RouterLink to="/professores" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
           Gerenciar professores
         </RouterLink>
-        <RouterLink to="/espacos" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+        <RouterLink to="/espacos" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
           Gerenciar espaços
         </RouterLink>
-        <RouterLink to="/feriados" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+        <RouterLink to="/feriados" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
           Gerenciar feriados
         </RouterLink>
       </div>

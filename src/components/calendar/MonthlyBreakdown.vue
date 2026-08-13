@@ -28,26 +28,26 @@ const totals = computed(() => {
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-md border border-slate-200">
+  <div class="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-700">
     <table class="w-full min-w-[360px] text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+      <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
         <tr>
           <th class="px-3 py-2 font-medium">Mês</th>
           <th class="px-3 py-2 font-medium">Nº de aulas</th>
           <th class="px-3 py-2 font-medium">Horas</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
         <tr v-if="breakdown.length === 0">
-          <td colspan="3" class="px-3 py-3 text-center text-slate-400">Sem dados para exibir</td>
+          <td colspan="3" class="px-3 py-3 text-center text-slate-400 dark:text-slate-500">Sem dados para exibir</td>
         </tr>
         <tr v-for="entry in breakdown" :key="`${entry.year}-${entry.month}`">
-          <td class="px-3 py-2 text-slate-700">{{ monthLabel(entry.month) }}/{{ entry.year }}</td>
-          <td class="px-3 py-2 text-slate-700">{{ entry.classesCount }}</td>
-          <td class="px-3 py-2 text-slate-700">{{ entry.hoursCount }}h</td>
+          <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ monthLabel(entry.month) }}/{{ entry.year }}</td>
+          <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ entry.classesCount }}</td>
+          <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ entry.hoursCount }}h</td>
         </tr>
       </tbody>
-      <tfoot v-if="breakdown.length > 0" class="border-t border-slate-200 bg-slate-50 font-medium text-slate-700">
+      <tfoot v-if="breakdown.length > 0" class="border-t border-slate-200 bg-slate-50 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
         <tr>
           <td class="px-3 py-2">Total</td>
           <td class="px-3 py-2">{{ totals.classesCount }}</td>

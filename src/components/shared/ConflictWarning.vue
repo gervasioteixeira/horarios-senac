@@ -35,7 +35,7 @@ const hint = computed(() =>
 </script>
 
 <template>
-  <div class="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+  <div class="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
     <p class="font-semibold">{{ title }}</p>
     <p v-if="conflict.kind === 'room'" class="mt-1">
       O espaço escolhido já está ocupado pela turma
@@ -53,6 +53,6 @@ const hint = computed(() =>
       no período de <strong>{{ conflict.conflictingClassGroup.startDate }}</strong>
       a <strong>{{ conflict.conflictingClassGroup.computedEndDate ?? "indefinido" }}</strong>.
     </p>
-    <p class="mt-1 text-red-700">{{ hint }}</p>
+    <p class="mt-1 text-red-700 dark:text-red-400">{{ hint }}</p>
   </div>
 </template>

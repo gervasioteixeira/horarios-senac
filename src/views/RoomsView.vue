@@ -56,28 +56,28 @@ function handleDelete(room: Room): void {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-semibold text-slate-800">Espaços</h2>
-        <p class="text-sm text-slate-500">Salas, laboratórios e demais espaços físicos disponíveis para alocação de turmas.</p>
+        <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Espaços</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Salas, laboratórios e demais espaços físicos disponíveis para alocação de turmas.</p>
       </div>
       <button
         type="button"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
         @click="openCreateForm"
       >
         + Novo espaço
       </button>
     </div>
 
-    <div v-if="showForm" class="rounded-lg border border-slate-200 bg-white p-5">
-      <h3 class="mb-4 text-base font-semibold text-slate-800">
+    <div v-if="showForm" class="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+      <h3 class="mb-4 text-base font-semibold text-slate-800 dark:text-slate-100">
         {{ editingRoom ? "Editar espaço" : "Novo espaço" }}
       </h3>
       <RoomForm :room="editingRoom" @submit="handleSubmit" @cancel="closeForm" />
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
       <table class="w-full min-w-[640px] text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+        <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3 font-medium">Nome</th>
             <th class="px-4 py-3 font-medium">Localização</th>
@@ -86,28 +86,28 @@ function handleDelete(room: Room): void {
             <th class="px-4 py-3 font-medium text-right">Ações</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
           <tr v-if="sortedRooms.length === 0">
-            <td colspan="5" class="px-4 py-6 text-center text-slate-400">Nenhum espaço cadastrado ainda.</td>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-400 dark:text-slate-500">Nenhum espaço cadastrado ainda.</td>
           </tr>
           <tr v-for="room in sortedRooms" :key="room.id">
-            <td class="px-4 py-3 font-medium text-slate-800">{{ room.name }}</td>
-            <td class="px-4 py-3 text-slate-600">{{ room.location || "—" }}</td>
-            <td class="px-4 py-3 text-slate-600">{{ room.capacity }} aluno(s)</td>
+            <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ room.name }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ room.location || "—" }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ room.capacity }} aluno(s)</td>
             <td class="px-4 py-3">
               <span
                 class="rounded-full px-2 py-0.5 text-xs font-medium"
-                :class="room.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+                :class="room.active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'"
               >
                 {{ room.active ? "Ativo" : "Inativo" }}
               </span>
             </td>
             <td class="px-4 py-3 text-right">
               <div class="flex flex-wrap justify-end gap-x-3 gap-y-1">
-                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900" @click="openEditForm(room)">
+                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100" @click="openEditForm(room)">
                   Editar
                 </button>
-                <button type="button" class="py-1 text-sm font-medium text-red-600 hover:text-red-800" @click="handleDelete(room)">
+                <button type="button" class="py-1 text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="handleDelete(room)">
                   Excluir
                 </button>
               </div>

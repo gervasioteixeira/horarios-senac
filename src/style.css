@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+/*
+ * Ativa a variante `dark:` do Tailwind com base numa classe `.dark` no
+ * <html> (em vez de só prefers-color-scheme), para suportar o
+ * alternador manual de tema (claro/escuro/sistema) em
+ * composables/useTheme.ts.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Paleta institucional do SENAC (mesmos valores de src/constants/brand.ts
+ * — extraídos de public/senac-logo.png). Registrada aqui para virar
+ * utilitários Tailwind (bg-brand-blue, border-brand-orange, etc.) em
+ * vez de hex arbitrário repetido pelos componentes.
+ */
+@theme {
+  --color-brand-blue: #0050a0;
+  --color-brand-blue-dark: #1a6fc4;
+  --color-brand-blue-hover: #003d7a;
+  --color-brand-orange: #f89020;
+}
+
 :root {
   color-scheme: light dark;
 }

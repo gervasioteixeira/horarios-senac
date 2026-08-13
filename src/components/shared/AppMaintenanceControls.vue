@@ -58,7 +58,7 @@ async function handleForceUpdate(): Promise<void> {
   <div class="flex flex-col gap-2">
     <button
       type="button"
-      class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+      class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       :disabled="updating"
       @click="handleForceUpdate"
     >
@@ -66,7 +66,7 @@ async function handleForceUpdate(): Promise<void> {
     </button>
     <button
       type="button"
-      class="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+      class="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-red-900/20"
       :disabled="clearing"
       @click="handleClearData"
     >

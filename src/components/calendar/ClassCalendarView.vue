@@ -238,18 +238,18 @@ const periodLabel = computed(() => {
 </script>
 
 <template>
-  <div class="rounded-lg border border-slate-200 bg-white p-4">
+  <div class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h3 class="text-base font-semibold capitalize text-slate-800">{{ periodLabel }}</h3>
+      <h3 class="text-base font-semibold capitalize text-slate-800 dark:text-slate-100">{{ periodLabel }}</h3>
 
       <div class="flex flex-wrap items-center gap-2">
-        <div class="flex rounded-md border border-slate-300 p-0.5 text-xs">
+        <div class="flex rounded-md border border-slate-300 p-0.5 text-xs dark:border-slate-600">
           <button
             v-for="mode in VIEW_MODES"
             :key="mode"
             type="button"
             class="rounded px-2.5 py-1 font-medium"
-            :class="viewMode === mode ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            :class="viewMode === mode ? 'bg-[#0050a0] text-white dark:bg-[#1a6fc4]' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'"
             @click="viewMode = mode"
           >
             {{ VIEW_MODE_LABELS[mode] }}
@@ -257,13 +257,13 @@ const periodLabel = computed(() => {
         </div>
 
         <div class="flex items-center gap-1.5">
-          <button type="button" class="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100" @click="goPrevious">
+          <button type="button" class="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" @click="goPrevious">
             &larr;
           </button>
-          <button type="button" class="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100" @click="goToToday">
+          <button type="button" class="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" @click="goToToday">
             Hoje
           </button>
-          <button type="button" class="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100" @click="goNext">
+          <button type="button" class="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" @click="goNext">
             &rarr;
           </button>
         </div>
@@ -271,16 +271,16 @@ const periodLabel = computed(() => {
     </div>
 
     <!-- Visão Dia -->
-    <div v-if="viewMode === 'day'" class="rounded-md border border-slate-200">
-      <div v-if="eventsFor(dayIso).length === 0" class="p-6 text-center text-sm text-slate-400">
+    <div v-if="viewMode === 'day'" class="rounded-md border border-slate-200 dark:border-slate-700">
+      <div v-if="eventsFor(dayIso).length === 0" class="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
         Nenhuma aula neste dia.
       </div>
-      <ul v-else class="divide-y divide-slate-100">
+      <ul v-else class="divide-y divide-slate-100 dark:divide-slate-700">
         <li v-for="event in eventsFor(dayIso)" :key="event.classGroupId" class="flex items-center gap-3 p-3">
-          <span class="h-3 w-3 shrink-0 rounded-full border border-slate-300" :style="{ backgroundColor: event.colorHex }" />
+          <span class="h-3 w-3 shrink-0 rounded-full border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: event.colorHex }" />
           <div>
-            <p class="text-sm font-medium text-slate-800">{{ event.name }}</p>
-            <p class="text-xs text-slate-500">
+            <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ event.name }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
               {{ event.teacherName }} · {{ event.timeSlotText }}<template v-if="event.roomName"> · {{ event.roomName }}</template>
             </p>
           </div>
@@ -290,12 +290,12 @@ const periodLabel = computed(() => {
 
     <!-- Visão Semana -->
     <div v-else-if="viewMode === 'week'" class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <div class="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs">
-        <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500">
+      <div class="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs dark:border-slate-700 dark:bg-slate-700">
+        <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           {{ wd }}
         </div>
-        <div v-for="cell in weekCells" :key="cell.iso" class="min-h-[110px] bg-white p-1.5 sm:min-h-[140px]">
-          <div class="mb-1 text-right text-[11px] text-slate-500">{{ cell.day }}</div>
+        <div v-for="cell in weekCells" :key="cell.iso" class="min-h-[110px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[140px]">
+          <div class="mb-1 text-right text-[11px] text-slate-500 dark:text-slate-400">{{ cell.day }}</div>
           <div class="flex flex-col gap-1">
             <div
               v-for="event in eventsFor(cell.iso)"
@@ -314,17 +314,17 @@ const periodLabel = computed(() => {
 
     <!-- Visão Mês -->
     <div v-else-if="viewMode === 'month'" class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <div class="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs">
-        <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500">
+      <div class="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs dark:border-slate-700 dark:bg-slate-700">
+        <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           {{ wd }}
         </div>
         <div
           v-for="cell in monthCells"
           :key="cell.iso"
-          class="min-h-[68px] bg-white p-1.5 sm:min-h-[92px]"
-          :class="{ 'bg-slate-50 text-slate-400': !cell.inCurrentMonth }"
+          class="min-h-[68px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[92px]"
+          :class="{ 'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500': !cell.inCurrentMonth }"
         >
-          <div class="mb-1 text-right text-[11px]" :class="cell.inCurrentMonth ? 'text-slate-500' : 'text-slate-300'">
+          <div class="mb-1 text-right text-[11px]" :class="cell.inCurrentMonth ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600'">
             {{ cell.day }}
           </div>
           <div class="flex flex-col gap-1">
@@ -348,11 +348,11 @@ const periodLabel = computed(() => {
         v-for="m in semesterMonths"
         :key="`${m.year}-${m.month}`"
         type="button"
-        class="rounded-md border border-slate-200 p-4 text-left hover:border-slate-400"
+        class="rounded-md border border-slate-200 p-4 text-left hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
         @click="openMonth(m.year, m.month)"
       >
-        <p class="text-sm font-medium text-slate-800">{{ m.label }}</p>
-        <p class="mt-1 text-xs text-slate-500">{{ m.eventCount }} aula(s) no mês</p>
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ m.label }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ m.eventCount }} aula(s) no mês</p>
       </button>
     </div>
 
@@ -362,11 +362,11 @@ const periodLabel = computed(() => {
         v-for="m in yearMonths"
         :key="`${m.year}-${m.month}`"
         type="button"
-        class="rounded-md border border-slate-200 p-3 text-left hover:border-slate-400"
+        class="rounded-md border border-slate-200 p-3 text-left hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
         @click="openMonth(m.year, m.month)"
       >
-        <p class="text-sm font-medium text-slate-800">{{ MONTH_SHORT_NAMES[m.month] }}</p>
-        <p class="mt-1 text-xs text-slate-500">{{ m.eventCount }} aula(s)</p>
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ MONTH_SHORT_NAMES[m.month] }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ m.eventCount }} aula(s)</p>
       </button>
     </div>
   </div>

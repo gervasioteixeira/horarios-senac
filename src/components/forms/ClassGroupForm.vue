@@ -186,12 +186,12 @@ function handleSubmit(): void {
   <form class="space-y-5" @submit.prevent="handleSubmit">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-course">Curso *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-course">Curso *</label>
         <select
           id="cg-course"
           v-model="form.courseId"
           required
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         >
           <option value="" disabled>Selecione um curso</option>
           <option v-for="c in coursesStore.courses" :key="c.id" :value="c.id">
@@ -201,21 +201,21 @@ function handleSubmit(): void {
       </div>
 
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-teacher">Professor *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-teacher">Professor *</label>
         <select
           id="cg-teacher"
           v-model="form.teacherId"
           required
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         >
           <option value="" disabled>Selecione um professor</option>
           <option v-for="t in teachersStore.teachers" :key="t.id" :value="t.id">
             {{ t.name }}
           </option>
         </select>
-        <div v-if="form.teacherId" class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+        <div v-if="form.teacherId" class="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span
-            class="inline-block h-3 w-3 rounded-full border border-slate-300"
+            class="inline-block h-3 w-3 rounded-full border border-slate-300 dark:border-slate-600"
             :style="{ backgroundColor: teachersStore.getById(form.teacherId)?.colorHex }"
           />
           <span>Cor do professor no calendário</span>
@@ -225,11 +225,11 @@ function handleSubmit(): void {
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-room">Espaço</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-room">Espaço</label>
         <select
           id="cg-room"
           v-model="form.roomId"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         >
           <option :value="undefined">Sem espaço definido</option>
           <option v-for="r in roomsStore.rooms" :key="r.id" :value="r.id">
@@ -239,7 +239,7 @@ function handleSubmit(): void {
       </div>
 
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-expected-students">Nº de alunos previstos</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-expected-students">Nº de alunos previstos</label>
         <input
           id="cg-expected-students"
           v-model.number="form.expectedStudents"
@@ -247,37 +247,37 @@ function handleSubmit(): void {
           min="1"
           step="1"
           placeholder="opcional"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
-        <p v-if="selectedRoom" class="mt-1 text-xs text-slate-500">Capacidade do espaço escolhido: {{ selectedRoom.capacity }} aluno(s).</p>
+        <p v-if="selectedRoom" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Capacidade do espaço escolhido: {{ selectedRoom.capacity }} aluno(s).</p>
       </div>
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-name">Nome da turma *</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-name">Nome da turma *</label>
       <input
         id="cg-name"
         v-model="form.name"
         type="text"
         required
         placeholder='Ex: "Excel Básico - Turma Manhã Jan/2026"'
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-start-date">Data de início *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-start-date">Data de início *</label>
         <input
           id="cg-start-date"
           v-model="form.startDate"
           type="date"
           required
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-daily-hours">Carga horária diária (horas) *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-daily-hours">Carga horária diária (horas) *</label>
         <input
           id="cg-daily-hours"
           v-model.number="form.dailyWorkloadHours"
@@ -285,18 +285,18 @@ function handleSubmit(): void {
           min="1"
           step="0.5"
           required
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
     </div>
 
     <div>
-      <span class="mb-1 block text-sm font-medium text-slate-700">Dias da semana *</span>
+      <span class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Dias da semana *</span>
       <div class="flex flex-wrap gap-3">
         <label
           v-for="day in ALL_WEEKDAYS"
           :key="day"
-          class="flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm has-[:checked]:border-slate-900 has-[:checked]:bg-slate-900 has-[:checked]:text-white"
+          class="flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm has-[:checked]:border-[#0050a0] has-[:checked]:bg-[#0050a0] has-[:checked]:text-white dark:border-slate-600 dark:text-slate-300 dark:has-[:checked]:border-[#1a6fc4] dark:has-[:checked]:bg-[#1a6fc4] dark:has-[:checked]:text-white"
         >
           <input
             type="checkbox"
@@ -310,12 +310,12 @@ function handleSubmit(): void {
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-time-slot">Faixa de horário *</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-time-slot">Faixa de horário *</label>
       <select
         id="cg-time-slot"
         v-model="selectedTimeSlotKey"
         required
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none sm:w-96"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:w-96"
       >
         <option v-for="slot in ALLOWED_TIME_SLOTS" :key="`${slot.start}-${slot.end}`" :value="`${slot.start}-${slot.end}`">
           {{ timeSlotLabel(slot) }}
@@ -324,11 +324,11 @@ function handleSubmit(): void {
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-status">Status</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-status">Status</label>
       <select
         id="cg-status"
         v-model="form.status"
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none sm:w-56"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:w-56"
       >
         <option value="planned">Planejada</option>
         <option value="ongoing">Em andamento</option>
@@ -337,22 +337,22 @@ function handleSubmit(): void {
       </select>
     </div>
 
-    <div v-if="preview" class="rounded-md border border-slate-200 bg-slate-50 p-4">
-      <p class="mb-2 text-sm font-medium text-slate-700">
+    <div v-if="preview" class="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700">
+      <p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
         Previsão de término:
-        <span class="font-semibold text-slate-900">{{ preview.endDate ?? "não foi possível calcular" }}</span>
+        <span class="font-semibold text-slate-900 dark:text-slate-100">{{ preview.endDate ?? "não foi possível calcular" }}</span>
       </p>
       <MonthlyBreakdown :breakdown="preview.monthlyBreakdown" />
     </div>
 
     <ConflictWarning v-if="conflict" :conflict="conflict" />
     <CapacityWarning v-if="capacityConflict" :conflict="capacityConflict" />
-    <p v-if="saveError" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{{ saveError }}</p>
+    <p v-if="saveError" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">{{ saveError }}</p>
 
     <div class="flex justify-end gap-2 pt-2">
       <button
         type="button"
-        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
         @click="emit('cancel')"
       >
         Cancelar
@@ -360,7 +360,7 @@ function handleSubmit(): void {
       <button
         type="submit"
         :disabled="!canSubmit"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+        class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
       >
         Salvar turma
       </button>

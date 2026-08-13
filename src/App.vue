@@ -3,6 +3,7 @@ import { ref, watch } from "vue"
 import { RouterLink, RouterView, useRoute } from "vue-router"
 import BackupControls from "./components/shared/BackupControls.vue"
 import AppMaintenanceControls from "./components/shared/AppMaintenanceControls.vue"
+import ThemeToggle from "./components/shared/ThemeToggle.vue"
 import { downloadPdf, generateUserManualPdf, INSTITUTIONAL_CREDITS } from "./services/pdfGenerator"
 
 const navItems = [
@@ -42,16 +43,18 @@ const logoUrl = `${import.meta.env.BASE_URL}senac-logo.png`
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900">
+  <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
     <!-- Barra superior: só aparece em telas pequenas (abaixo do breakpoint lg) -->
-    <header class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+    <header
+      class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800 lg:hidden"
+    >
       <div class="flex items-center gap-2">
         <img :src="logoUrl" alt="" class="h-7 w-auto" />
-        <span class="text-base font-semibold text-slate-800">Horários Senac</span>
+        <span class="text-base font-semibold text-slate-800 dark:text-slate-100">Horários Senac</span>
       </div>
       <button
         type="button"
-        class="rounded-md border border-slate-300 p-2 text-slate-600 hover:bg-slate-100"
+        class="rounded-md border border-slate-300 p-2 text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
         aria-label="Abrir menu"
         @click="sidebarOpen = true"
       >
@@ -70,17 +73,17 @@ const logoUrl = `${import.meta.env.BASE_URL}senac-logo.png`
       />
 
       <aside
-        class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] transform flex-col overflow-y-auto border-r border-slate-200 bg-white px-4 py-6 transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:w-56 lg:max-w-none lg:translate-x-0"
+        class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] transform flex-col overflow-y-auto border-r border-t-2 border-slate-200 border-t-[#f89020] bg-white px-4 py-6 transition-transform duration-200 ease-in-out dark:border-slate-700 dark:border-t-[#f89020] dark:bg-slate-800 lg:static lg:z-auto lg:w-56 lg:max-w-none lg:translate-x-0"
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
       >
         <div class="mb-6 flex items-center justify-between px-2">
           <div class="flex items-center gap-2">
             <img :src="logoUrl" alt="" class="hidden h-7 w-auto lg:block" />
-            <h1 class="text-lg font-semibold text-slate-800">Horários Senac</h1>
+            <h1 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Horários Senac</h1>
           </div>
           <button
             type="button"
-            class="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+            class="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 lg:hidden"
             aria-label="Fechar menu"
             @click="sidebarOpen = false"
           >
@@ -95,28 +98,33 @@ const logoUrl = `${import.meta.env.BASE_URL}senac-logo.png`
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="rounded-md px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 lg:py-2"
-            active-class="bg-slate-900 text-white hover:bg-slate-900"
+            class="rounded-md px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 lg:py-2"
+            active-class="!bg-[#0050a0] !text-white dark:!bg-[#1a6fc4]"
           >
             {{ item.label }}
           </RouterLink>
         </nav>
 
-        <div class="mt-8 border-t border-slate-200 pt-4">
-          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Backup</p>
+        <div class="mt-8 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Aparência</p>
+          <ThemeToggle />
+        </div>
+
+        <div class="mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Backup</p>
           <BackupControls />
         </div>
 
-        <div class="mt-6 border-t border-slate-200 pt-4">
-          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Manutenção</p>
+        <div class="mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Manutenção</p>
           <AppMaintenanceControls />
         </div>
 
-        <div class="mt-6 border-t border-slate-200 pt-4">
-          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Ajuda</p>
+        <div class="mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Ajuda</p>
           <button
             type="button"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 lg:py-1.5"
+            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 lg:py-1.5"
             :disabled="generatingManual"
             @click="handleDownloadManual"
           >
@@ -130,10 +138,15 @@ const logoUrl = `${import.meta.env.BASE_URL}senac-logo.png`
           <RouterView />
         </main>
 
-        <footer class="border-t border-slate-200 bg-white px-4 py-4 text-center text-xs text-slate-400 sm:px-6">
+        <footer
+          class="border-t border-slate-200 bg-white px-4 py-4 text-center text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 sm:px-6"
+        >
           Todos os direitos reservados — {{ INSTITUTIONAL_CREDITS.organization }}<br />
           Desenvolvido por: {{ INSTITUTIONAL_CREDITS.developedBy }} —
-          <a :href="`mailto:${INSTITUTIONAL_CREDITS.contactEmail}`" class="text-slate-500 hover:text-slate-700 hover:underline">
+          <a
+            :href="`mailto:${INSTITUTIONAL_CREDITS.contactEmail}`"
+            class="text-slate-500 hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+          >
             {{ INSTITUTIONAL_CREDITS.contactEmail }}
           </a>
         </footer>

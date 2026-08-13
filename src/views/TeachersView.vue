@@ -63,28 +63,28 @@ function handleDownloadPdf(teacher: Teacher): void {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-semibold text-slate-800">Professores</h2>
-        <p class="text-sm text-slate-500">Cadastro de professores e cor de identificação no calendário.</p>
+        <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Professores</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Cadastro de professores e cor de identificação no calendário.</p>
       </div>
       <button
         type="button"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
         @click="openCreateForm"
       >
         + Novo professor
       </button>
     </div>
 
-    <div v-if="showForm" class="rounded-lg border border-slate-200 bg-white p-5">
-      <h3 class="mb-4 text-base font-semibold text-slate-800">
+    <div v-if="showForm" class="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+      <h3 class="mb-4 text-base font-semibold text-slate-800 dark:text-slate-100">
         {{ editingTeacher ? "Editar professor" : "Novo professor" }}
       </h3>
       <TeacherForm :teacher="editingTeacher" @submit="handleSubmit" @cancel="closeForm" />
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
       <table class="w-full min-w-[640px] text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+        <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3 font-medium">Cor</th>
             <th class="px-4 py-3 font-medium">Nome</th>
@@ -94,34 +94,34 @@ function handleDownloadPdf(teacher: Teacher): void {
             <th class="px-4 py-3 font-medium text-right">Ações</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
           <tr v-if="sortedTeachers.length === 0">
-            <td colspan="6" class="px-4 py-6 text-center text-slate-400">Nenhum professor cadastrado ainda.</td>
+            <td colspan="6" class="px-4 py-6 text-center text-slate-400 dark:text-slate-500">Nenhum professor cadastrado ainda.</td>
           </tr>
           <tr v-for="teacher in sortedTeachers" :key="teacher.id">
             <td class="px-4 py-3">
-              <span class="inline-block h-4 w-4 rounded-full border border-slate-300" :style="{ backgroundColor: teacher.colorHex }" />
+              <span class="inline-block h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: teacher.colorHex }" />
             </td>
-            <td class="px-4 py-3 font-medium text-slate-800">{{ teacher.name }}</td>
-            <td class="px-4 py-3 text-slate-600">{{ teacher.email || "—" }}</td>
-            <td class="px-4 py-3 text-slate-600">{{ teacher.phone || "—" }}</td>
+            <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ teacher.name }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ teacher.email || "—" }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ teacher.phone || "—" }}</td>
             <td class="px-4 py-3">
               <span
                 class="rounded-full px-2 py-0.5 text-xs font-medium"
-                :class="teacher.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+                :class="teacher.active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'"
               >
                 {{ teacher.active ? "Ativo" : "Inativo" }}
               </span>
             </td>
             <td class="px-4 py-3 text-right">
               <div class="flex flex-wrap justify-end gap-x-3 gap-y-1">
-                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900" @click="handleDownloadPdf(teacher)">
+                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100" @click="handleDownloadPdf(teacher)">
                   Baixar PDF
                 </button>
-                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900" @click="openEditForm(teacher)">
+                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100" @click="openEditForm(teacher)">
                   Editar
                 </button>
-                <button type="button" class="py-1 text-sm font-medium text-red-600 hover:text-red-800" @click="handleDelete(teacher)">
+                <button type="button" class="py-1 text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="handleDelete(teacher)">
                   Excluir
                 </button>
               </div>
