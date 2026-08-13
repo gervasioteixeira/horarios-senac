@@ -280,50 +280,54 @@ const periodLabel = computed(() => {
     </div>
 
     <!-- Visão Semana -->
-    <div v-else-if="viewMode === 'week'" class="grid grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs">
-      <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500">
-        {{ wd }}
-      </div>
-      <div v-for="cell in weekCells" :key="cell.iso" class="min-h-[140px] bg-white p-1.5">
-        <div class="mb-1 text-right text-[11px] text-slate-500">{{ cell.day }}</div>
-        <div class="flex flex-col gap-1">
-          <div
-            v-for="event in eventsFor(cell.iso)"
-            :key="event.classGroupId"
-            class="rounded px-1.5 py-1 text-[11px] font-medium text-white"
-            :style="{ backgroundColor: event.colorHex }"
-            :title="`${event.name} — ${event.teacherName}`"
-          >
-            <div class="truncate">{{ event.name }}</div>
-            <div class="truncate opacity-90">{{ event.timeSlotText }}</div>
+    <div v-else-if="viewMode === 'week'" class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div class="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs">
+        <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500">
+          {{ wd }}
+        </div>
+        <div v-for="cell in weekCells" :key="cell.iso" class="min-h-[110px] bg-white p-1.5 sm:min-h-[140px]">
+          <div class="mb-1 text-right text-[11px] text-slate-500">{{ cell.day }}</div>
+          <div class="flex flex-col gap-1">
+            <div
+              v-for="event in eventsFor(cell.iso)"
+              :key="event.classGroupId"
+              class="rounded px-1.5 py-1 text-[11px] font-medium text-white"
+              :style="{ backgroundColor: event.colorHex }"
+              :title="`${event.name} — ${event.teacherName}`"
+            >
+              <div class="truncate">{{ event.name }}</div>
+              <div class="truncate opacity-90">{{ event.timeSlotText }}</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Visão Mês -->
-    <div v-else-if="viewMode === 'month'" class="grid grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs">
-      <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500">
-        {{ wd }}
-      </div>
-      <div
-        v-for="cell in monthCells"
-        :key="cell.iso"
-        class="min-h-[92px] bg-white p-1.5"
-        :class="{ 'bg-slate-50 text-slate-400': !cell.inCurrentMonth }"
-      >
-        <div class="mb-1 text-right text-[11px]" :class="cell.inCurrentMonth ? 'text-slate-500' : 'text-slate-300'">
-          {{ cell.day }}
+    <div v-else-if="viewMode === 'month'" class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div class="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 text-xs">
+        <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500">
+          {{ wd }}
         </div>
-        <div class="flex flex-col gap-1">
-          <div
-            v-for="event in eventsFor(cell.iso)"
-            :key="event.classGroupId"
-            class="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
-            :style="{ backgroundColor: event.colorHex }"
-            :title="`${event.name} — ${event.teacherName}`"
-          >
-            {{ event.name }}
+        <div
+          v-for="cell in monthCells"
+          :key="cell.iso"
+          class="min-h-[68px] bg-white p-1.5 sm:min-h-[92px]"
+          :class="{ 'bg-slate-50 text-slate-400': !cell.inCurrentMonth }"
+        >
+          <div class="mb-1 text-right text-[11px]" :class="cell.inCurrentMonth ? 'text-slate-500' : 'text-slate-300'">
+            {{ cell.day }}
+          </div>
+          <div class="flex flex-col gap-1">
+            <div
+              v-for="event in eventsFor(cell.iso)"
+              :key="event.classGroupId"
+              class="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+              :style="{ backgroundColor: event.colorHex }"
+              :title="`${event.name} — ${event.teacherName}`"
+            >
+              {{ event.name }}
+            </div>
           </div>
         </div>
       </div>

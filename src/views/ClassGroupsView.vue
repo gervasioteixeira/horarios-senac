@@ -140,18 +140,18 @@ function handleDownloadPdf(classGroup: ClassGroup): void {
               </span>
             </td>
             <td class="px-4 py-3 text-right">
-              <div class="flex justify-end gap-2">
+              <div class="flex flex-wrap justify-end gap-x-3 gap-y-1">
                 <button
                   type="button"
-                  class="text-sm font-medium text-slate-600 hover:text-slate-900"
+                  class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900"
                   @click="handleDownloadPdf(cg)"
                 >
                   Baixar PDF
                 </button>
-                <button type="button" class="text-sm font-medium text-slate-600 hover:text-slate-900" @click="openEditForm(cg)">
+                <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900" @click="openEditForm(cg)">
                   Editar
                 </button>
-                <button type="button" class="text-sm font-medium text-red-600 hover:text-red-800" @click="handleDelete(cg)">
+                <button type="button" class="py-1 text-sm font-medium text-red-600 hover:text-red-800" @click="handleDelete(cg)">
                   Excluir
                 </button>
               </div>

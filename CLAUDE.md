@@ -119,6 +119,20 @@ silenciosamente em qualquer falha de carregamento).
 | Limpar todos os dados salvos / forçar atualização do app | `src/components/shared/AppMaintenanceControls.vue`, fixo na sidebar (`App.vue`). "Limpar dados" exige dupla confirmação e usa `clearAllLocalStorage` de `useLocalStorage.ts`. "Buscar atualizações" limpa Cache API/Service Worker (se existirem) e recarrega com um query param de cache-busting — não apaga dados |
 | Manual do usuário para download público em PDF | Botão "Baixar manual (PDF)" fixo na sidebar (`App.vue`) → `generateUserManualPdf` em `src/services/pdfGenerator.ts`, que lê o conteúdo de `src/content/userManual.ts`. Não depende de nenhum dado cadastrado — funciona mesmo com o sistema "vazio" |
 
+## Responsividade mobile
+
+Breakpoint de referência: `lg` (Tailwind, 1024px). Abaixo dele, a sidebar (`App.vue`) vira um
+drawer off-canvas: fica `fixed` fora da tela (`-translate-x-full`), abre com um botão hambúrguer
+numa barra superior própria do mobile (`header ... lg:hidden`), com overlay escurecido atrás
+(`z-30`, abaixo do drawer `z-40`) que fecha ao tocar fora. Um `watch` na rota fecha o drawer
+automaticamente ao navegar. A partir de `lg`, o drawer volta a ser `static` e sempre visível
+(comportamento de sidebar fixa tradicional) — não altere essa parte sem testar os dois modos.
+
+Tabelas (Turmas/Cursos/Professores/Feriados) usam `overflow-x-auto` + `min-w-[...]px` no
+container para rolar horizontalmente em telas estreitas em vez de espremer colunas — mantenha
+esse padrão em qualquer tabela nova. O calendário (`ClassCalendarView.vue`) segue o mesmo padrão
+nas visões Semana e Mês (grid de 7 colunas com `min-w-[560px]` dentro de um `overflow-x-auto`).
+
 ## Regra de testes (evitar regressão)
 
 **Toda nova funcionalidade ou alteração que tocar algo em `src/services/` deve vir acompanhada de

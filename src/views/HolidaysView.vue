@@ -163,11 +163,11 @@ function formatDate(iso: string): string {
               <td class="px-4 py-3 text-slate-600">{{ SCOPE_LABELS[h.scope] }}</td>
               <td class="px-4 py-3 text-slate-600">{{ h.recurring ? "Sim" : "Não" }}</td>
               <td class="px-4 py-3 text-right">
-                <div class="flex justify-end gap-2">
-                  <button type="button" class="text-sm font-medium text-slate-600 hover:text-slate-900" @click="openEditForm(h)">
+                <div class="flex flex-wrap justify-end gap-x-3 gap-y-1">
+                  <button type="button" class="py-1 text-sm font-medium text-slate-600 hover:text-slate-900" @click="openEditForm(h)">
                     Editar
                   </button>
-                  <button type="button" class="text-sm font-medium text-red-600 hover:text-red-800" @click="handleDelete(h)">
+                  <button type="button" class="py-1 text-sm font-medium text-red-600 hover:text-red-800" @click="handleDelete(h)">
                     Excluir
                   </button>
                 </div>
