@@ -6,7 +6,8 @@ Este arquivo orienta sessões futuras do Claude Code trabalhando neste repositó
 
 Sistema interno de gestão de cursos para uma empresa de formação (cliente), focado em:
 agendar turmas, calcular automaticamente a data de término de cada turma e a distribuição
-de aulas/horas por mês, evitar choque de horário de professores, e gerar PDFs de turma/professor.
+de aulas/horas por mês, evitar choque de horário de professores E de espaços físicos
+(salas/laboratórios), validar capacidade de alunos por espaço, e gerar PDFs de turma/professor.
 
 **Professores não acessam o sistema.** É uma ferramenta de uso interno da equipe administrativa.
 
@@ -62,17 +63,17 @@ src/
   services/            # lógica de negócio pura (sem Vue, testável isoladamente)
     calendarEngine.ts     # calcula data de término e distribuição mensal de aulas
     holidayEngine.ts      # feriados nacionais (fixos + móveis via algoritmo de Gauss para Páscoa)
-    conflictChecker.ts     # detecta choque de horário do mesmo professor
+    conflictChecker.ts     # detecta choque de horário (professor OU espaço) e capacidade excedida
     backup.ts          # export/import JSON (download/upload)
     pdfGenerator.ts       # geração de PDF de turma, de professor e do manual do usuário; INSTITUTIONAL_CREDITS e INSTITUTIONAL_LOGO_PATH centralizados aqui
   content/userManual.ts     # conteúdo estruturado (seções/parágrafos/listas) do manual, consumido pelo generateUserManualPdf
   stores/              # Pinia — cada store persiste automaticamente no localStorage
-    teachers.ts, courses.ts, holidays.ts, classGroups.ts
+    teachers.ts, courses.ts, holidays.ts, classGroups.ts, rooms.ts
   composables/useLocalStorage.ts # helpers de leitura/escrita/persistência automática no localStorage
-  components/forms/       # ClassGroupForm, CourseForm, TeacherForm, HolidayForm
+  components/forms/       # ClassGroupForm, CourseForm, TeacherForm, HolidayForm, RoomForm
   components/calendar/     # MonthlyBreakdown (tabela), ClassCalendarView (visões dia/semana/mês/semestre/ano, colorido por professor)
-  components/shared/      # BackupControls (export/import JSON), AppMaintenanceControls (limpar dados + forçar atualização), ConflictWarning
-  views/               # DashboardView, CoursesView, ClassGroupsView, TeachersView, HolidaysView
+  components/shared/      # BackupControls (export/import JSON), AppMaintenanceControls (limpar dados + forçar atualização), ConflictWarning (professor/sala), CapacityWarning (capacidade excedida)
+  views/               # DashboardView, CoursesView, ClassGroupsView, TeachersView, HolidaysView, RoomsView
   router/index.ts
 tests/unit/*.spec.ts       # testes dos services/ (ver seção "Regra de testes" abaixo)
 docs/MANUAL-DO-USUARIO.md    # manual em PT-BR para a cliente (não-técnica) — fonte "narrativa"; ver também src/content/userManual.ts (fonte estruturada usada no PDF)
@@ -99,10 +100,13 @@ silenciosamente em qualquer falha de carregamento).
 
 - **Teacher**: professor — nome, contato opcional, `colorHex` (cor usada no calendário), ativo.
 - **Course**: curso — é um *template* (nome, carga horária total, ementa). Pode ter várias Turmas.
-- **ClassGroup** (turma): é a *instância* real — curso, professor, data de início, carga horária
-  diária, dias da semana, faixa de horário. Guarda os campos calculados: `computedEndDate`,
-  `computedMonthlyBreakdown`, `computedClassDates` (recalculados pelo `calendarEngine` sempre que
-  a turma é salva).
+- **Room**: espaço físico (sala/laboratório/auditório) — nome, localização opcional, `capacity`
+  (capacidade máxima de alunos), ativo.
+- **ClassGroup** (turma): é a *instância* real — curso, professor, `roomId` opcional, `expectedStudents`
+  opcional, data de início, carga horária diária, dias da semana, faixa de horário. Guarda os
+  campos calculados: `computedEndDate`, `computedMonthlyBreakdown`, `computedClassDates`
+  (recalculados pelo `calendarEngine` sempre que a turma é salva). `roomId`/`expectedStudents` são
+  opcionais para não invalidar turmas cadastradas antes desses campos existirem.
 - **Holiday**: feriado — nacional (gerado automaticamente) ou customizado (estadual/municipal/
   ponto facultativo, cadastrado manualmente pela cliente).
 
@@ -113,7 +117,8 @@ silenciosamente em qualquer falha de carregamento).
 | Cálculo de data de término e distribuição mensal, pulando domingos/dias não letivos/feriados | `src/services/calendarEngine.ts` (`calculateSchedule`) |
 | Feriados nacionais fixos e móveis (Páscoa, Carnaval, Corpus Christi) | `src/services/holidayEngine.ts` |
 | Faixas de horário estritas permitidas (manhã/tarde/noite) | `src/constants/schedule.ts` (`ALLOWED_TIME_SLOTS`) — o formulário deve sempre usar essa lista, nunca aceitar horário livre |
-| Bloqueio de choque de horário do mesmo professor | `src/services/conflictChecker.ts` (`findScheduleConflict`) — chamado dentro de `classGroups.ts` store no `save()`, que bloqueia e retorna o conflito em vez de salvar |
+| Bloqueio de choque de horário (mesmo professor OU mesmo espaço) | `src/services/conflictChecker.ts` (`findScheduleConflict`) — checa professor primeiro, depois espaço; retorna `ScheduleConflict.kind: "teacher" \| "room"`. Chamado dentro de `classGroups.ts` store no `save()`, que bloqueia e retorna o conflito em vez de salvar. `ConflictWarning.vue` exibe mensagem diferente conforme `kind` |
+| Bloqueio por capacidade de alunos excedida | `src/services/conflictChecker.ts` (`findCapacityConflict`) — compara `ClassGroup.expectedStudents` com `Room.capacity`; só roda se ambos os dois estiverem preenchidos. `classGroups.ts` store retorna `SaveClassGroupResult.capacityConflict` (independente de `conflict`); `CapacityWarning.vue` exibe a mensagem |
 | Cor do professor refletida no calendário | `Teacher.colorHex`, consumido em `ClassCalendarView.vue` via `:style` (Tailwind não gera classes para hex arbitrário em runtime) |
 | Visões de calendário (dia/semana/mês/semestre/ano) | `ClassCalendarView.vue` — um único componente com `viewMode` local; semestre/ano mostram mini-meses clicáveis que abrem a visão de mês |
 | Limpar todos os dados salvos / forçar atualização do app | `src/components/shared/AppMaintenanceControls.vue`, fixo na sidebar (`App.vue`). "Limpar dados" exige dupla confirmação e usa `clearAllLocalStorage` de `useLocalStorage.ts`. "Buscar atualizações" limpa Cache API/Service Worker (se existirem) e recarrega com um query param de cache-busting — não apaga dados |
@@ -143,8 +148,8 @@ de horários) — cobertura de teste aqui é obrigatória, não opcional.
 Casos já cobertos (não remover sem substituir por algo equivalente):
 - `calendarEngine.spec.ts`: caso simples, feriado no meio, virada de mês/ano, proteção contra domingo/weekdays vazio.
 - `holidayEngine.spec.ts`: Páscoa em anos conhecidos, feriados fixos, feriados móveis derivados, merge com customizados.
-- `conflictChecker.spec.ts`: sobreposição de horário/dia, sem sobreposição de dia, horários adjacentes sem overlap, vigências não cruzadas, professores diferentes, turmas canceladas ignoradas, edição da própria turma.
-- `backup.spec.ts`: export contém todas as entidades, roundtrip export→import, rejeição de JSON malformado/incompleto/versão futura.
+- `conflictChecker.spec.ts`: sobreposição de horário/dia, sem sobreposição de dia, horários adjacentes sem overlap, vigências não cruzadas, professores diferentes, turmas canceladas ignoradas, edição da própria turma, conflito de sala entre professores diferentes, sem conflito de sala quando os espaços diferem, sem conflito quando nenhuma turma tem espaço definido, prioridade professor > sala quando ambos colidem, capacidade excedida/igual/menor/sem espaço/sem nº de alunos.
+- `backup.spec.ts`: export contém todas as entidades (incluindo rooms), roundtrip export→import, rejeição de JSON malformado/incompleto/versão futura, aceitação de backup legado sem a chave "rooms" (preenche com lista vazia).
 
 ## Persistência (localStorage)
 
@@ -162,30 +167,33 @@ repositório no GitHub mudar, esse valor precisa mudar junto.
 
 ## Status do projeto
 
-**MVP completo e funcional** (13/08/2026). Todas as telas, serviços e testes descritos neste
-documento existem e passam:
+**MVP completo e funcional**, com módulo de espaços físicos (13/08/2026). Todas as telas,
+serviços e testes descritos neste documento existem e passam:
 
 - `npx vue-tsc -b --noEmit` — sem erros de tipo
-- `npx vitest run` — 23 testes, 4 arquivos, todos passando
+- `npx vitest run` — 33 testes, 4 arquivos, todos passando
 - `npm run build` — build de produção OK
 
 Implementado:
-- `src/types/index.ts`, `src/constants/schedule.ts`
+- `src/types/index.ts` (inclui `Room`), `src/constants/schedule.ts`
 - `src/services/{calendarEngine,holidayEngine,conflictChecker,backup,pdfGenerator}.ts` + testes dos 4 primeiros
-- `src/stores/{teachers,courses,holidays,classGroups}.ts` (Pinia, persistência automática em localStorage)
+- `src/stores/{teachers,courses,holidays,classGroups,rooms}.ts` (Pinia, persistência automática em localStorage)
 - `src/composables/useLocalStorage.ts`
-- `src/components/forms/{TeacherForm,CourseForm,HolidayForm,ClassGroupForm}.vue`
+- `src/components/forms/{TeacherForm,CourseForm,HolidayForm,ClassGroupForm,RoomForm}.vue`
 - `src/components/calendar/{MonthlyBreakdown,ClassCalendarView}.vue`
-- `src/components/shared/{ConflictWarning,BackupControls}.vue`
-- `src/views/{DashboardView,CoursesView,ClassGroupsView,TeachersView,HolidaysView}.vue`
-- Botões de "Baixar PDF" funcionais em Turmas (PDF da turma) e Professores (PDF do professor)
-- `BackupControls.vue` fixo na sidebar (`App.vue`), disponível em qualquer tela
+- `src/components/shared/{ConflictWarning,CapacityWarning,BackupControls,AppMaintenanceControls}.vue`
+- `src/views/{DashboardView,CoursesView,ClassGroupsView,TeachersView,HolidaysView,RoomsView}.vue`
+- Botões de "Baixar PDF" funcionais em Turmas (PDF da turma, com espaço/capacidade quando preenchidos) e Professores (PDF do professor)
+- Bloqueio de conflito de sala e de capacidade excedida integrados ao fluxo de salvar turma
+- `BackupControls.vue` e `AppMaintenanceControls.vue` fixos na sidebar (`App.vue`), disponíveis em qualquer tela
+- Manual do usuário para download em PDF (`generateUserManualPdf`), com logo institucional na capa
+- Sidebar responsiva (drawer off-canvas em mobile/tablet)
 - `.github/workflows/deploy.yml` (build + test + deploy no push em `main`)
-- `docs/MANUAL-DO-USUARIO.md`
+- `docs/MANUAL-DO-USUARIO.md` + `src/content/userManual.ts`
 
 **Pendente / próximos passos possíveis** (não implementado ainda, não assumir que existe):
 - Testes de componente (`@vue/test-utils`) — hoje a suite cobre só `services/`, que é o núcleo crítico
 - Edição/exclusão de status da turma (`ongoing`/`finished`) não tem UI dedicada além do campo cru
-- Repositório git ainda não inicializado neste diretório até a etapa de Git/GitHub ser conduzida com o usuário
+- PDF dedicado "por espaço" (agenda de uma sala) não existe ainda — só há PDF por turma e por professor
 
 Em caso de dúvida sobre o que está funcional, rode `npm run test` e `npm run build`.

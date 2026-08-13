@@ -3,7 +3,7 @@ import { buildBackupPayload, InvalidBackupFileError, parseBackupFile, serializeB
 import type { BackupSourceData } from "../../src/services/backup"
 
 function emptyData(): BackupSourceData {
-  return { teachers: [], courses: [], holidays: [], classGroups: [] }
+  return { teachers: [], courses: [], holidays: [], classGroups: [], rooms: [] }
 }
 
 describe("backup service", () => {
@@ -22,6 +22,16 @@ describe("backup service", () => {
       courses: [],
       holidays: [],
       classGroups: [],
+      rooms: [
+        {
+          id: "r1",
+          name: "Sala 1",
+          capacity: 30,
+          active: true,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
     }
 
     const payload = buildBackupPayload(data)
@@ -34,6 +44,8 @@ describe("backup service", () => {
     expect(parsedBack.data.courses).toEqual([])
     expect(parsedBack.data.holidays).toEqual([])
     expect(parsedBack.data.classGroups).toEqual([])
+    expect(parsedBack.data.rooms).toHaveLength(1)
+    expect(parsedBack.data.rooms[0].name).toBe("Sala 1")
   })
 
   it("faz o roundtrip export -> import sem perda de dados", () => {
@@ -74,6 +86,18 @@ describe("backup service", () => {
       data: { teachers: [], courses: [], holidays: [] }, // falta classGroups
     })
     expect(() => parseBackupFile(broken)).toThrow(InvalidBackupFileError)
+  })
+
+  it("aceita um backup antigo sem a chave 'rooms' (criado antes desse campo existir), preenchendo com lista vazia", () => {
+    const legacyBackup = JSON.stringify({
+      schemaVersion: 1,
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      data: { teachers: [], courses: [], holidays: [], classGroups: [] }, // sem "rooms"
+    })
+
+    const imported = parseBackupFile(legacyBackup)
+
+    expect(imported.data.rooms).toEqual([])
   })
 
   it("rejeita um backup de uma versão de esquema mais nova que a suportada", () => {

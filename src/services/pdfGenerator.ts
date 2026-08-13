@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf"
 import { __createTable, __drawTable, type UserOptions } from "jspdf-autotable"
-import type { ClassGroup, Course, Teacher } from "../types"
+import type { ClassGroup, Course, Room, Teacher } from "../types"
 import { WEEKDAY_SHORT_LABELS } from "../constants/schedule"
 import { timeSlotLabel } from "../constants/schedule"
 import { USER_MANUAL_SECTIONS, USER_MANUAL_TITLE, type ManualContentBlock } from "../content/userManual"
@@ -91,17 +91,25 @@ function applyFooterToAllPages(doc: jsPDF): void {
 
 /**
  * Gera o PDF de uma turma: dados cadastrais, calendário de aulas
- * (data, dia da semana) e resumo de carga horária mensal.
+ * (data, dia da semana) e resumo de carga horária mensal. O espaço
+ * físico (`room`) é opcional — turmas sem espaço definido omitem essa
+ * linha do cabeçalho.
  */
-export function generateClassGroupPdf(classGroup: ClassGroup, course: Course, teacher: Teacher): jsPDF {
+export function generateClassGroupPdf(classGroup: ClassGroup, course: Course, teacher: Teacher, room?: Room): jsPDF {
   const doc = new jsPDF()
 
-  let y = addHeader(doc, classGroup.name, [
+  const headerLines = [
     `Curso: ${course.name}  |  Carga horária total: ${course.totalWorkloadHours}h`,
     `Professor(a): ${teacher.name}`,
     `Dias da semana: ${classGroup.weekdays.map((d) => WEEKDAY_SHORT_LABELS[d]).join(", ")}  |  Horário: ${timeSlotLabel(classGroup.timeSlot)}`,
     `Início: ${formatDateBr(classGroup.startDate)}  |  Término previsto: ${formatDateBr(classGroup.computedEndDate)}`,
-  ])
+  ]
+  if (room) {
+    const studentsInfo = classGroup.expectedStudents ? ` — ${classGroup.expectedStudents} aluno(s) previstos` : ""
+    headerLines.push(`Espaço: ${room.name} (capacidade: ${room.capacity})${studentsInfo}`)
+  }
+
+  let y = addHeader(doc, classGroup.name, headerLines)
 
   y = drawTableAndGetFinalY(doc, {
     startY: y,

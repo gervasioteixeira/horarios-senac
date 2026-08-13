@@ -1,9 +1,11 @@
-import type { ClassGroup, TimeSlot, Weekday } from "../types"
+import type { ClassGroup, Room, TimeSlot, Weekday } from "../types"
 
 export interface ScheduleConflictCheckInput {
   /** Turma sendo criada/editada (id pode ser omitido/novo se ainda não existir). */
   id?: string
   teacherId: string
+  /** Espaço físico onde a turma acontece. Se omitido, não há checagem de conflito de sala. */
+  roomId?: string
   startDate: string
   /** Data de término calculada pelo calendarEngine para a turma em avaliação. */
   endDate: string | null
@@ -11,9 +13,17 @@ export interface ScheduleConflictCheckInput {
   timeSlot: Pick<TimeSlot, "start" | "end">
 }
 
+export type ScheduleConflictKind = "teacher" | "room"
+
 export interface ScheduleConflict {
+  kind: ScheduleConflictKind
   conflictingClassGroup: ClassGroup
   sharedWeekdays: Weekday[]
+}
+
+export interface CapacityConflict {
+  room: Room
+  expectedStudents: number
 }
 
 function timeRangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
@@ -29,23 +39,19 @@ function dateRangesOverlap(aStart: string, aEnd: string | null, bStart: string, 
   return aStart <= bEndSafe && bStart <= aEndSafe
 }
 
-/**
- * Verifica se a turma informada colide de horário com alguma turma já
- * existente do mesmo professor (regra de negócio 3): mesmo professor,
- * períodos de vigência que se sobrepõem, pelo menos um dia da semana em
- * comum e faixas de horário que se sobrepõem.
- *
- * Retorna a primeira turma conflitante encontrada, ou null se não houver conflito.
- * Turmas canceladas são ignoradas na checagem.
- */
-export function findScheduleConflict(
+function findConflictBySameResource(
   candidate: ScheduleConflictCheckInput,
   existingClassGroups: ClassGroup[],
+  kind: ScheduleConflictKind,
+  resourceIdOf: (cg: ClassGroup | ScheduleConflictCheckInput) => string | undefined,
 ): ScheduleConflict | null {
+  const candidateResourceId = resourceIdOf(candidate)
+  if (!candidateResourceId) return null
+
   for (const other of existingClassGroups) {
     if (other.id === candidate.id) continue
-    if (other.teacherId !== candidate.teacherId) continue
     if (other.status === "cancelled") continue
+    if (resourceIdOf(other) !== candidateResourceId) continue
 
     if (!dateRangesOverlap(candidate.startDate, candidate.endDate, other.startDate, other.computedEndDate)) {
       continue
@@ -58,8 +64,40 @@ export function findScheduleConflict(
       continue
     }
 
-    return { conflictingClassGroup: other, sharedWeekdays }
+    return { kind, conflictingClassGroup: other, sharedWeekdays }
   }
 
   return null
+}
+
+/**
+ * Verifica se a turma informada colide de horário com alguma turma já
+ * existente (regra de negócio 3, estendida): mesmo professor OU mesmo
+ * espaço físico, períodos de vigência que se sobrepõem, pelo menos um
+ * dia da semana em comum e faixas de horário que se sobrepõem.
+ *
+ * A checagem de professor tem prioridade sobre a de sala quando ambas
+ * ocorrem — retorna o primeiro conflito encontrado. Turmas canceladas
+ * são ignoradas.
+ */
+export function findScheduleConflict(
+  candidate: ScheduleConflictCheckInput,
+  existingClassGroups: ClassGroup[],
+): ScheduleConflict | null {
+  const teacherConflict = findConflictBySameResource(candidate, existingClassGroups, "teacher", (cg) => cg.teacherId)
+  if (teacherConflict) return teacherConflict
+
+  return findConflictBySameResource(candidate, existingClassGroups, "room", (cg) => cg.roomId)
+}
+
+/**
+ * Verifica se o número de alunos previstos da turma excede a
+ * capacidade do espaço escolhido. Retorna null se não houver espaço
+ * selecionado, número de alunos informado, ou se a capacidade for
+ * suficiente.
+ */
+export function findCapacityConflict(expectedStudents: number | undefined, room: Room | undefined): CapacityConflict | null {
+  if (!room || !expectedStudents) return null
+  if (expectedStudents <= room.capacity) return null
+  return { room, expectedStudents }
 }

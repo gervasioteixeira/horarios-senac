@@ -100,11 +100,27 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
     ],
   },
   {
-    heading: "4. Criar uma turma",
+    heading: "4. Cadastrar um espaço (sala, laboratório, etc.)",
+    blocks: [
+      ol([
+        "Vá em Espaços.",
+        "Clique em Novo espaço.",
+        "Preencha o nome, a localização (opcional) e a capacidade (quantidade máxima de alunos).",
+        "Clique em Salvar.",
+      ]),
+      p(
+        "Cadastrar os espaços permite ao sistema avisar quando duas turmas forem marcadas para a mesma " +
+          "sala no mesmo horário, e avisar quando uma turma tiver mais alunos do que o espaço comporta.",
+      ),
+    ],
+  },
+  {
+    heading: "5. Criar uma turma",
     blocks: [
       ol([
         "Vá em Turmas e clique em Nova turma.",
         "Escolha o curso e o professor responsável.",
+        "Se desejar, escolha o espaço e informe o número de alunos previstos (opcionais).",
         "Dê um nome para a turma (ex: \"Excel Básico — Turma Manhã Jan/2026\").",
         "Escolha a data de início.",
         "Informe a carga horária diária (ex: 4h).",
@@ -114,13 +130,18 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
         "Clique em Salvar.",
       ]),
       p(
-        "Se o professor escolhido já tiver outra turma no mesmo dia da semana e horário, dentro do mesmo " +
-          "período, o sistema vai impedir salvar e mostrar qual é a turma conflitante.",
+        "O sistema verifica dois tipos de conflito antes de salvar: mesmo professor em duas turmas no " +
+          "mesmo horário, ou mesmo espaço ocupado por duas turmas no mesmo horário. Em qualquer um dos " +
+          "casos, o sistema impede salvar e mostra qual é a turma conflitante.",
+      ),
+      p(
+        "Se o número de alunos previstos for maior que a capacidade do espaço escolhido, o sistema " +
+          "também impede salvar e mostra a capacidade máxima permitida.",
       ),
     ],
   },
   {
-    heading: "5. Ver o calendário",
+    heading: "6. Ver o calendário",
     blocks: [
       p(
         "A tela de Turmas mostra um calendário com todas as aulas, cada uma destacada com a cor do " +
@@ -129,10 +150,10 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
     ],
   },
   {
-    heading: "6. Gerar PDF",
+    heading: "7. Gerar PDF",
     blocks: [
       ul([
-        "PDF da turma: na lista de turmas, clique em Baixar PDF ao lado da turma desejada — traz os dados da turma, o calendário completo de aulas e o resumo de horas por mês.",
+        "PDF da turma: na lista de turmas, clique em Baixar PDF ao lado da turma desejada — traz os dados da turma (incluindo espaço e alunos previstos, quando preenchidos), o calendário completo de aulas e o resumo de horas por mês.",
         "PDF do professor: na lista de professores, clique em Baixar PDF ao lado do nome — traz os dados do professor e a agenda consolidada de todas as turmas dele.",
       ]),
     ],
@@ -163,9 +184,9 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
           "recente do sistema, sem apagar nenhum dado.",
       ),
       p(
-        "Limpar todos os dados: apaga permanentemente todos os professores, cursos, turmas e feriados " +
-          "cadastrados neste navegador. Use apenas se tiver certeza (e de preferência com um backup feito " +
-          "antes) — a ação pede confirmação em dobro por ser irreversível.",
+        "Limpar todos os dados: apaga permanentemente todos os professores, cursos, turmas, espaços e " +
+          "feriados cadastrados neste navegador. Use apenas se tiver certeza (e de preferência com um " +
+          "backup feito antes) — a ação pede confirmação em dobro por ser irreversível.",
       ),
     ],
   },

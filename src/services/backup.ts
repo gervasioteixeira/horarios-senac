@@ -1,4 +1,4 @@
-import type { BackupPayload, ClassGroup, Course, Holiday, Teacher } from "../types"
+import type { BackupPayload, ClassGroup, Course, Holiday, Room, Teacher } from "../types"
 
 export const BACKUP_SCHEMA_VERSION = 1
 
@@ -7,6 +7,7 @@ export interface BackupSourceData {
   courses: Course[]
   holidays: Holiday[]
   classGroups: ClassGroup[]
+  rooms: Room[]
 }
 
 /** Monta o payload de backup a partir dos dados atuais das stores. */
@@ -63,7 +64,13 @@ export function parseBackupFile(rawContent: string): BackupPayload {
   }
 
   const data = candidate.data as Partial<BackupSourceData>
-  const requiredKeys: Array<keyof BackupSourceData> = ["teachers", "courses", "holidays", "classGroups"]
+  // "rooms" foi adicionado depois: backups antigos sem essa chave ainda são aceitos,
+  // preenchendo com lista vazia em vez de rejeitar o arquivo inteiro.
+  if (data.rooms === undefined) {
+    data.rooms = []
+  }
+
+  const requiredKeys: Array<keyof BackupSourceData> = ["teachers", "courses", "holidays", "classGroups", "rooms"]
   for (const key of requiredKeys) {
     if (!Array.isArray(data[key])) {
       throw new InvalidBackupFileError(`O arquivo de backup está incompleto (faltando "${key}").`)

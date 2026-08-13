@@ -3,6 +3,7 @@ import { computed, ref } from "vue"
 import { useClassGroupsStore } from "../stores/classGroups"
 import { useCoursesStore } from "../stores/courses"
 import { useTeachersStore } from "../stores/teachers"
+import { useRoomsStore } from "../stores/rooms"
 import ClassGroupForm from "../components/forms/ClassGroupForm.vue"
 import ClassCalendarView from "../components/calendar/ClassCalendarView.vue"
 import type { ClassGroup } from "../types"
@@ -12,6 +13,7 @@ import { downloadPdf, generateClassGroupPdf } from "../services/pdfGenerator"
 const classGroupsStore = useClassGroupsStore()
 const coursesStore = useCoursesStore()
 const teachersStore = useTeachersStore()
+const roomsStore = useRoomsStore()
 
 const showForm = ref(false)
 const editingClassGroup = ref<ClassGroup | null>(null)
@@ -40,6 +42,11 @@ function courseName(courseId: string): string {
 
 function teacherOf(teacherId: string) {
   return teachersStore.getById(teacherId)
+}
+
+function roomName(roomId: string | undefined): string {
+  if (!roomId) return "—"
+  return roomsStore.getById(roomId)?.name ?? "Espaço removido"
 }
 
 function openCreateForm(): void {
@@ -73,7 +80,8 @@ function handleDownloadPdf(classGroup: ClassGroup): void {
     window.alert("Não foi possível gerar o PDF: curso ou professor não encontrado.")
     return
   }
-  const doc = generateClassGroupPdf(classGroup, course, teacher)
+  const room = classGroup.roomId ? roomsStore.getById(classGroup.roomId) : undefined
+  const doc = generateClassGroupPdf(classGroup, course, teacher, room)
   downloadPdf(doc, `turma-${classGroup.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.pdf`)
 }
 </script>
@@ -102,12 +110,13 @@ function handleDownloadPdf(classGroup: ClassGroup): void {
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-      <table class="w-full min-w-[860px] text-left text-sm">
+      <table class="w-full min-w-[980px] text-left text-sm">
         <thead class="bg-slate-50 text-xs uppercase text-slate-500">
           <tr>
             <th class="px-4 py-3 font-medium">Turma</th>
             <th class="px-4 py-3 font-medium">Curso</th>
             <th class="px-4 py-3 font-medium">Professor</th>
+            <th class="px-4 py-3 font-medium">Espaço</th>
             <th class="px-4 py-3 font-medium">Período</th>
             <th class="px-4 py-3 font-medium">Faixa</th>
             <th class="px-4 py-3 font-medium">Status</th>
@@ -116,7 +125,7 @@ function handleDownloadPdf(classGroup: ClassGroup): void {
         </thead>
         <tbody class="divide-y divide-slate-100">
           <tr v-if="sortedClassGroups.length === 0">
-            <td colspan="7" class="px-4 py-6 text-center text-slate-400">Nenhuma turma cadastrada ainda.</td>
+            <td colspan="8" class="px-4 py-6 text-center text-slate-400">Nenhuma turma cadastrada ainda.</td>
           </tr>
           <tr v-for="cg in sortedClassGroups" :key="cg.id">
             <td class="px-4 py-3 font-medium text-slate-800">{{ cg.name }}</td>
@@ -130,6 +139,7 @@ function handleDownloadPdf(classGroup: ClassGroup): void {
                 {{ teacherOf(cg.teacherId)?.name ?? "Professor removido" }}
               </div>
             </td>
+            <td class="px-4 py-3 text-slate-600">{{ roomName(cg.roomId) }}</td>
             <td class="px-4 py-3 text-slate-600">
               {{ cg.startDate }} — {{ cg.computedEndDate ?? "?" }}
             </td>

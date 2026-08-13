@@ -3,11 +3,13 @@ import { computed, reactive, ref, watch } from "vue"
 import type { ClassGroup, TimeSlot, Weekday } from "../../types"
 import { useCoursesStore } from "../../stores/courses"
 import { useTeachersStore } from "../../stores/teachers"
+import { useRoomsStore } from "../../stores/rooms"
 import { useClassGroupsStore, type ClassGroupDraft } from "../../stores/classGroups"
-import type { ScheduleConflict } from "../../services/conflictChecker"
+import type { CapacityConflict, ScheduleConflict } from "../../services/conflictChecker"
 import { ALLOWED_TIME_SLOTS, ALL_WEEKDAYS, WEEKDAY_LABELS, timeSlotLabel } from "../../constants/schedule"
 import MonthlyBreakdown from "../calendar/MonthlyBreakdown.vue"
 import ConflictWarning from "../shared/ConflictWarning.vue"
+import CapacityWarning from "../shared/CapacityWarning.vue"
 
 const props = defineProps<{
   classGroup?: ClassGroup | null
@@ -20,12 +22,15 @@ const emit = defineEmits<{
 
 const coursesStore = useCoursesStore()
 const teachersStore = useTeachersStore()
+const roomsStore = useRoomsStore()
 const classGroupsStore = useClassGroupsStore()
 
 function defaultState(): ClassGroupDraft {
   return {
     courseId: "",
     teacherId: "",
+    roomId: undefined,
+    expectedStudents: undefined,
     name: "",
     startDate: "",
     dailyWorkloadHours: 4,
@@ -37,6 +42,7 @@ function defaultState(): ClassGroupDraft {
 
 const form = reactive<ClassGroupDraft>(defaultState())
 const conflict = ref<ScheduleConflict | null>(null)
+const capacityConflict = ref<CapacityConflict | null>(null)
 const saveError = ref("")
 
 function resetFromProp(): void {
@@ -44,6 +50,8 @@ function resetFromProp(): void {
   if (cg) {
     form.courseId = cg.courseId
     form.teacherId = cg.teacherId
+    form.roomId = cg.roomId
+    form.expectedStudents = cg.expectedStudents
     form.name = cg.name
     form.startDate = cg.startDate
     form.dailyWorkloadHours = cg.dailyWorkloadHours
@@ -54,6 +62,7 @@ function resetFromProp(): void {
     Object.assign(form, defaultState())
   }
   conflict.value = null
+  capacityConflict.value = null
   saveError.value = ""
 }
 
@@ -101,12 +110,25 @@ const preview = computed(() => {
 // (o computed acima já é reativo, mas o watch garante que erros de conflito
 // anteriores sejam limpos assim que o usuário altera o formulário).
 watch(
-  () => [form.courseId, form.teacherId, form.startDate, form.dailyWorkloadHours, form.weekdays.join(","), form.timeSlot.start, form.timeSlot.end],
+  () => [
+    form.courseId,
+    form.teacherId,
+    form.roomId,
+    form.expectedStudents,
+    form.startDate,
+    form.dailyWorkloadHours,
+    form.weekdays.join(","),
+    form.timeSlot.start,
+    form.timeSlot.end,
+  ],
   () => {
     conflict.value = null
+    capacityConflict.value = null
     saveError.value = ""
   },
 )
+
+const selectedRoom = computed(() => (form.roomId ? roomsStore.getById(form.roomId) : undefined))
 
 const canSubmit = computed(() => {
   return Boolean(
@@ -130,6 +152,8 @@ function handleSubmit(): void {
   const draft: ClassGroupDraft = {
     courseId: form.courseId,
     teacherId: form.teacherId,
+    roomId: form.roomId || undefined,
+    expectedStudents: form.expectedStudents ? Number(form.expectedStudents) : undefined,
     name: form.name.trim(),
     startDate: form.startDate,
     dailyWorkloadHours: Number(form.dailyWorkloadHours),
@@ -143,6 +167,8 @@ function handleSubmit(): void {
   if (!result.ok) {
     if (result.conflict) {
       conflict.value = result.conflict
+    } else if (result.capacityConflict) {
+      capacityConflict.value = result.capacityConflict
     } else {
       saveError.value = "Não foi possível salvar a turma."
     }
@@ -150,6 +176,7 @@ function handleSubmit(): void {
   }
 
   conflict.value = null
+  capacityConflict.value = null
   saveError.value = ""
   if (result.classGroup) emit("saved", result.classGroup)
 }
@@ -193,6 +220,36 @@ function handleSubmit(): void {
           />
           <span>Cor do professor no calendário</span>
         </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-room">Espaço</label>
+        <select
+          id="cg-room"
+          v-model="form.roomId"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        >
+          <option :value="undefined">Sem espaço definido</option>
+          <option v-for="r in roomsStore.rooms" :key="r.id" :value="r.id">
+            {{ r.name }} (até {{ r.capacity }} alunos)
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700" for="cg-expected-students">Nº de alunos previstos</label>
+        <input
+          id="cg-expected-students"
+          v-model.number="form.expectedStudents"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="opcional"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        />
+        <p v-if="selectedRoom" class="mt-1 text-xs text-slate-500">Capacidade do espaço escolhido: {{ selectedRoom.capacity }} aluno(s).</p>
       </div>
     </div>
 
@@ -289,6 +346,7 @@ function handleSubmit(): void {
     </div>
 
     <ConflictWarning v-if="conflict" :conflict="conflict" />
+    <CapacityWarning v-if="capacityConflict" :conflict="capacityConflict" />
     <p v-if="saveError" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{{ saveError }}</p>
 
     <div class="flex justify-end gap-2 pt-2">

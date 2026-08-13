@@ -44,6 +44,18 @@ export interface Course {
   updatedAt: string
 }
 
+export interface Room {
+  id: string
+  name: string
+  /** Localização/prédio/bloco (opcional), útil quando há vários espaços com nomes parecidos. */
+  location?: string
+  /** Capacidade máxima de alunos que o espaço comporta. */
+  capacity: number
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export type HolidayScope = "national" | "state" | "municipal" | "custom"
 
 export interface Holiday {
@@ -74,6 +86,16 @@ export interface ClassGroup {
   id: string
   courseId: string
   teacherId: string
+  /**
+   * Espaço físico (sala/laboratório/auditório) onde a turma acontece.
+   * Opcional para não invalidar turmas cadastradas antes deste campo
+   * existir — mas quando preenchido, entra na checagem de conflito de
+   * horário (a mesma sala não pode ter duas turmas no mesmo horário)
+   * e na validação de capacidade (ver `expectedStudents`).
+   */
+  roomId?: string
+  /** Número de alunos previstos para a turma, usado para validar contra a capacidade do espaço. */
+  expectedStudents?: number
   name: string
   /** Data de início no formato "YYYY-MM-DD". */
   startDate: string
@@ -101,5 +123,6 @@ export interface BackupPayload {
     courses: Course[]
     holidays: Holiday[]
     classGroups: ClassGroup[]
+    rooms: Room[]
   }
 }

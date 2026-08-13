@@ -10,6 +10,7 @@ const navItems = [
   { to: "/turmas", label: "Turmas" },
   { to: "/cursos", label: "Cursos" },
   { to: "/professores", label: "Professores" },
+  { to: "/espacos", label: "Espaços" },
   { to: "/feriados", label: "Feriados" },
 ]
 

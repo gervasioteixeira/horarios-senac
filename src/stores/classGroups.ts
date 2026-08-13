@@ -3,8 +3,9 @@ import { ref } from "vue"
 import type { ClassGroup } from "../types"
 import { LOCAL_STORAGE_KEYS, persistToLocalStorage, readFromLocalStorage } from "../composables/useLocalStorage"
 import { calculateSchedule } from "../services/calendarEngine"
-import { findScheduleConflict, type ScheduleConflict } from "../services/conflictChecker"
+import { findCapacityConflict, findScheduleConflict, type CapacityConflict, type ScheduleConflict } from "../services/conflictChecker"
 import { useHolidaysStore } from "./holidays"
+import { useRoomsStore } from "./rooms"
 import { mergeHolidayDates } from "../services/holidayEngine"
 
 function generateId(): string {
@@ -20,6 +21,7 @@ export interface SaveClassGroupResult {
   ok: boolean
   classGroup?: ClassGroup
   conflict?: ScheduleConflict
+  capacityConflict?: CapacityConflict
 }
 
 export const useClassGroupsStore = defineStore("classGroups", () => {
@@ -47,9 +49,10 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
 
   /**
    * Salva (cria ou atualiza) uma turma, recalculando o calendário e
-   * verificando conflito de horário do professor antes de persistir.
-   * Se houver conflito, NÃO salva e retorna o conflito encontrado
-   * (regra de negócio 3: bloquear ao salvar).
+   * verificando, antes de persistir: (1) conflito de horário do
+   * professor OU do espaço físico, e (2) se o número de alunos
+   * previstos excede a capacidade do espaço. Se qualquer um ocorrer,
+   * NÃO salva (regra de negócio 3, estendida a espaços físicos).
    */
   function save(draft: ClassGroupDraft, course: { totalWorkloadHours: number }, existingId?: string): SaveClassGroupResult {
     const schedule = computeSchedule(draft, course)
@@ -58,6 +61,7 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
       {
         id: existingId,
         teacherId: draft.teacherId,
+        roomId: draft.roomId,
         startDate: draft.startDate,
         endDate: schedule.endDate,
         weekdays: draft.weekdays,
@@ -68,6 +72,14 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
 
     if (conflict) {
       return { ok: false, conflict }
+    }
+
+    if (draft.roomId) {
+      const roomsStore = useRoomsStore()
+      const capacityConflict = findCapacityConflict(draft.expectedStudents, roomsStore.getById(draft.roomId))
+      if (capacityConflict) {
+        return { ok: false, capacityConflict }
+      }
     }
 
     const now = new Date().toISOString()
@@ -109,9 +121,13 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
     return classGroups.value.filter((c) => c.teacherId === teacherId)
   }
 
+  function getByRoomId(roomId: string): ClassGroup[] {
+    return classGroups.value.filter((c) => c.roomId === roomId)
+  }
+
   function replaceAll(newClassGroups: ClassGroup[]): void {
     classGroups.value = newClassGroups
   }
 
-  return { classGroups, computeSchedule, save, remove, getById, getByTeacherId, replaceAll }
+  return { classGroups, computeSchedule, save, remove, getById, getByTeacherId, getByRoomId, replaceAll }
 })

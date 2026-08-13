@@ -13,6 +13,7 @@ const router = createRouter({
     { path: "/cursos", name: "courses", component: () => import("../views/CoursesView.vue") },
     { path: "/turmas", name: "class-groups", component: () => import("../views/ClassGroupsView.vue") },
     { path: "/professores", name: "teachers", component: () => import("../views/TeachersView.vue") },
+    { path: "/espacos", name: "rooms", component: () => import("../views/RoomsView.vue") },
     { path: "/feriados", name: "holidays", component: () => import("../views/HolidaysView.vue") },
   ],
 })

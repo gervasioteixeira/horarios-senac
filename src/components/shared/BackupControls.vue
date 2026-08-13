@@ -4,12 +4,14 @@ import { useTeachersStore } from "../../stores/teachers"
 import { useCoursesStore } from "../../stores/courses"
 import { useHolidaysStore } from "../../stores/holidays"
 import { useClassGroupsStore } from "../../stores/classGroups"
+import { useRoomsStore } from "../../stores/rooms"
 import { buildBackupPayload, downloadBackupFile, InvalidBackupFileError, parseBackupFile, readFileAsText } from "../../services/backup"
 
 const teachersStore = useTeachersStore()
 const coursesStore = useCoursesStore()
 const holidaysStore = useHolidaysStore()
 const classGroupsStore = useClassGroupsStore()
+const roomsStore = useRoomsStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const importError = ref<string | null>(null)
@@ -21,6 +23,7 @@ function handleDownload(): void {
     courses: coursesStore.courses,
     holidays: holidaysStore.holidays,
     classGroups: classGroupsStore.classGroups,
+    rooms: roomsStore.rooms,
   })
   downloadBackupFile(payload)
 }
@@ -42,7 +45,7 @@ async function handleFileSelected(event: Event): Promise<void> {
 
     const confirmMessage =
       "Importar este backup vai SUBSTITUIR todos os dados atuais " +
-      "(professores, cursos, turmas e feriados) neste navegador. Deseja continuar?"
+      "(professores, cursos, turmas, espaços e feriados) neste navegador. Deseja continuar?"
     if (!window.confirm(confirmMessage)) {
       input.value = ""
       return
@@ -52,6 +55,7 @@ async function handleFileSelected(event: Event): Promise<void> {
     coursesStore.replaceAll(payload.data.courses)
     holidaysStore.replaceAll(payload.data.holidays)
     classGroupsStore.replaceAll(payload.data.classGroups)
+    roomsStore.replaceAll(payload.data.rooms)
 
     importSuccess.value = true
     importError.value = null

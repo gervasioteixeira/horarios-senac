@@ -51,4 +51,5 @@ export const LOCAL_STORAGE_KEYS = {
   courses: "courses",
   holidays: "holidays",
   classGroups: "classGroups",
+  rooms: "rooms",
 } as const

@@ -2,10 +2,12 @@
 import { computed, ref } from "vue"
 import { useClassGroupsStore } from "../../stores/classGroups"
 import { useTeachersStore } from "../../stores/teachers"
+import { useRoomsStore } from "../../stores/rooms"
 import { timeSlotLabel } from "../../constants/schedule"
 
 const classGroupsStore = useClassGroupsStore()
 const teachersStore = useTeachersStore()
+const roomsStore = useRoomsStore()
 
 type ViewMode = "day" | "week" | "month" | "semester" | "year"
 
@@ -55,11 +57,15 @@ function addMonths(date: Date, amount: number): Date {
 
 /** Eventos (turma com aula) indexados por data ISO "YYYY-MM-DD". */
 const eventsByDate = computed(() => {
-  const map = new Map<string, Array<{ classGroupId: string; name: string; colorHex: string; teacherName: string; timeSlotText: string }>>()
+  const map = new Map<
+    string,
+    Array<{ classGroupId: string; name: string; colorHex: string; teacherName: string; timeSlotText: string; roomName: string | null }>
+  >()
   for (const cg of classGroupsStore.classGroups) {
     if (cg.status === "cancelled") continue
     const teacher = teachersStore.getById(cg.teacherId)
     const colorHex = teacher?.colorHex ?? "#64748b"
+    const roomName = cg.roomId ? (roomsStore.getById(cg.roomId)?.name ?? "Espaço removido") : null
     for (const date of cg.computedClassDates) {
       const list = map.get(date) ?? []
       list.push({
@@ -68,6 +74,7 @@ const eventsByDate = computed(() => {
         colorHex,
         teacherName: teacher?.name ?? "Professor removido",
         timeSlotText: timeSlotLabel(cg.timeSlot),
+        roomName,
       })
       map.set(date, list)
     }
@@ -273,7 +280,9 @@ const periodLabel = computed(() => {
           <span class="h-3 w-3 shrink-0 rounded-full border border-slate-300" :style="{ backgroundColor: event.colorHex }" />
           <div>
             <p class="text-sm font-medium text-slate-800">{{ event.name }}</p>
-            <p class="text-xs text-slate-500">{{ event.teacherName }} · {{ event.timeSlotText }}</p>
+            <p class="text-xs text-slate-500">
+              {{ event.teacherName }} · {{ event.timeSlotText }}<template v-if="event.roomName"> · {{ event.roomName }}</template>
+            </p>
           </div>
         </li>
       </ul>
@@ -293,7 +302,7 @@ const periodLabel = computed(() => {
               :key="event.classGroupId"
               class="rounded px-1.5 py-1 text-[11px] font-medium text-white"
               :style="{ backgroundColor: event.colorHex }"
-              :title="`${event.name} — ${event.teacherName}`"
+              :title="event.roomName ? `${event.name} — ${event.teacherName} — ${event.roomName}` : `${event.name} — ${event.teacherName}`"
             >
               <div class="truncate">{{ event.name }}</div>
               <div class="truncate opacity-90">{{ event.timeSlotText }}</div>
@@ -324,7 +333,7 @@ const periodLabel = computed(() => {
               :key="event.classGroupId"
               class="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
               :style="{ backgroundColor: event.colorHex }"
-              :title="`${event.name} — ${event.teacherName}`"
+              :title="event.roomName ? `${event.name} — ${event.teacherName} — ${event.roomName}` : `${event.name} — ${event.teacherName}`"
             >
               {{ event.name }}
             </div>

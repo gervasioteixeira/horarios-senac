@@ -4,11 +4,13 @@ import { RouterLink } from "vue-router"
 import { useTeachersStore } from "../stores/teachers"
 import { useCoursesStore } from "../stores/courses"
 import { useClassGroupsStore } from "../stores/classGroups"
+import { useRoomsStore } from "../stores/rooms"
 import { timeSlotLabel } from "../constants/schedule"
 
 const teachersStore = useTeachersStore()
 const coursesStore = useCoursesStore()
 const classGroupsStore = useClassGroupsStore()
+const roomsStore = useRoomsStore()
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0")
@@ -36,6 +38,7 @@ interface UpcomingClass {
   courseName: string
   teacherName: string
   teacherColor: string
+  roomName: string | null
   date: string
   timeSlotText: string
 }
@@ -48,6 +51,7 @@ const upcomingThisWeek = computed<UpcomingClass[]>(() => {
     if (cg.status === "cancelled") continue
     const teacher = teachersStore.getById(cg.teacherId)
     const course = coursesStore.getById(cg.courseId)
+    const roomName = cg.roomId ? (roomsStore.getById(cg.roomId)?.name ?? "Espaço removido") : null
     for (const date of cg.computedClassDates) {
       if (date >= start && date <= end) {
         result.push({
@@ -56,6 +60,7 @@ const upcomingThisWeek = computed<UpcomingClass[]>(() => {
           courseName: course?.name ?? "Curso removido",
           teacherName: teacher?.name ?? "Professor removido",
           teacherColor: teacher?.colorHex ?? "#94a3b8",
+          roomName,
           date,
           timeSlotText: timeSlotLabel(cg.timeSlot),
         })
@@ -75,6 +80,7 @@ const stats = computed(() => [
   { label: "Professores", value: teachersStore.teachers.length, to: "/professores" },
   { label: "Cursos", value: coursesStore.courses.length, to: "/cursos" },
   { label: "Turmas ativas", value: activeClassGroupsCount.value, to: "/turmas" },
+  { label: "Espaços", value: roomsStore.rooms.length, to: "/espacos" },
 ])
 </script>
 
@@ -96,7 +102,7 @@ const stats = computed(() => [
       </p>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <RouterLink
         v-for="stat in stats"
         :key="stat.label"
@@ -124,7 +130,7 @@ const stats = computed(() => [
           </div>
           <div class="text-right text-xs text-slate-500">
             <p class="font-medium text-slate-700">{{ formatDate(item.date) }}</p>
-            <p>{{ item.timeSlotText }}</p>
+            <p>{{ item.timeSlotText }}<template v-if="item.roomName"> · {{ item.roomName }}</template></p>
           </div>
         </li>
       </ul>
@@ -141,6 +147,9 @@ const stats = computed(() => [
         </RouterLink>
         <RouterLink to="/professores" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
           Gerenciar professores
+        </RouterLink>
+        <RouterLink to="/espacos" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Gerenciar espaços
         </RouterLink>
         <RouterLink to="/feriados" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
           Gerenciar feriados

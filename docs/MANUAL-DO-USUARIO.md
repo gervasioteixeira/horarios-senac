@@ -65,17 +65,32 @@ Esses feriados também passam a ser descontados automaticamente no cálculo de q
 Um curso é como um "modelo": o mesmo curso pode dar origem a várias turmas diferentes ao
 longo do tempo (ex: "Excel Básico" pode ter uma turma em janeiro de manhã e outra em março à noite).
 
-## 4. Criar uma turma
+## 4. Cadastrar um espaço (sala, laboratório, etc.)
+
+1. Vá em **Espaços**.
+2. Clique em **Novo espaço**.
+3. Preencha o nome (ex: "Sala 3" ou "Laboratório de Informática 1"), a localização (opcional,
+   ex: "Bloco A, 2º andar") e a **capacidade** (quantidade máxima de alunos que o espaço comporta).
+4. Clique em **Salvar**.
+
+Cadastrar os espaços é o que permite ao sistema avisar quando duas turmas forem marcadas para
+a mesma sala no mesmo horário, e também avisar quando uma turma tiver mais alunos previstos do
+que o espaço comporta.
+
+## 5. Criar uma turma
 
 1. Vá em **Turmas**.
 2. Clique em **Nova turma**.
 3. Escolha o **curso** e o **professor** responsável.
-4. Dê um nome para a turma (ex: "Excel Básico — Turma Manhã Jan/2026").
-5. Escolha a **data de início**.
-6. Informe a **carga horária diária** (quantas horas de aula por dia, ex: 4).
-7. Marque os **dias da semana** em que a turma terá aula (segunda a sábado — domingo nunca
+4. Se desejar, escolha o **espaço** onde a turma vai acontecer e informe o **número de alunos
+   previstos** — esses dois campos são opcionais, mas se preenchidos juntos o sistema confere
+   se a turma cabe no espaço escolhido.
+5. Dê um nome para a turma (ex: "Excel Básico — Turma Manhã Jan/2026").
+6. Escolha a **data de início**.
+7. Informe a **carga horária diária** (quantas horas de aula por dia, ex: 4).
+8. Marque os **dias da semana** em que a turma terá aula (segunda a sábado — domingo nunca
    é usado).
-8. Escolha o **horário** em uma das opções fixas disponíveis (manhã, tarde ou noite). Só é
+9. Escolha o **horário** em uma das opções fixas disponíveis (manhã, tarde ou noite). Só é
    possível escolher entre os horários já configurados no sistema, para manter a padronização.
 
 Assim que os campos principais estiverem preenchidos, o sistema mostra automaticamente:
@@ -86,33 +101,46 @@ Assim que os campos principais estiverem preenchidos, o sistema mostra automatic
 Esse cálculo já leva em conta os feriados cadastrados e pula automaticamente os dias da semana
 que não foram marcados.
 
-9. Clique em **Salvar**.
+10. Clique em **Salvar**.
 
-### O que acontece se der conflito de horário
+### O que acontece se der conflito de horário ou de espaço
 
-Se o professor escolhido já tiver outra turma no mesmo dia da semana e horário, dentro do
-mesmo período, o sistema **vai impedir salvar** e vai mostrar qual é a turma conflitante,
-para que você possa ajustar o horário, o dia ou trocar o professor.
+O sistema verifica dois tipos de conflito antes de salvar uma turma:
 
-## 5. Ver o calendário
+- **Conflito de professor**: se o professor escolhido já tiver outra turma no mesmo dia da
+  semana e horário, dentro do mesmo período.
+- **Conflito de espaço**: se o espaço escolhido já estiver ocupado por outra turma (com outro
+  professor) no mesmo dia da semana e horário, dentro do mesmo período — afinal, duas turmas
+  diferentes não podem usar a mesma sala ao mesmo tempo.
 
-A tela de **Turmas** mostra um calendário mensal com todas as aulas de todas as turmas, cada
-uma destacada com a cor do professor responsável. Use as setas para navegar entre os meses.
+Em qualquer um dos dois casos, o sistema **vai impedir salvar** e vai mostrar qual é a turma
+conflitante, para que você possa ajustar o dia, o horário, o professor ou o espaço.
 
-## 6. Gerar PDF
+Além disso, se o **número de alunos previstos** informado for maior que a **capacidade** do
+espaço escolhido, o sistema também impede salvar e mostra a capacidade máxima permitida.
+
+## 6. Ver o calendário
+
+A tela de **Turmas** mostra um calendário com todas as aulas de todas as turmas, cada uma
+destacada com a cor do professor responsável — é possível alternar entre as visões de **Dia,
+Semana, Mês, Semestre e Ano**, usando os botões no topo do calendário. Use as setas para
+navegar entre os períodos.
+
+## 7. Gerar PDF
 
 Você pode baixar um PDF de duas formas:
 
 - **PDF da turma**: na lista de turmas, clique em **Baixar PDF** ao lado da turma desejada.
-  O PDF traz os dados da turma, o calendário completo de aulas (data e dia da semana) e um
-  resumo de quantas horas ocorrem em cada mês.
+  O PDF traz os dados da turma (incluindo espaço e número de alunos previstos, quando
+  preenchidos), o calendário completo de aulas (data e dia da semana) e um resumo de quantas
+  horas ocorrem em cada mês.
 - **PDF do professor**: na lista de professores, clique em **Baixar PDF** ao lado do nome.
   O PDF traz os dados do professor e a agenda consolidada de todas as turmas dele (útil para
   o professor conferir sua própria agenda, mesmo sem acessar o sistema).
 
 ## Backup: por que é tão importante
 
-Os dados cadastrados (professores, cursos, turmas, feriados customizados) ficam salvos **apenas
+Os dados cadastrados (professores, cursos, turmas, espaços, feriados customizados) ficam salvos **apenas
 no navegador deste computador** — não existe um servidor guardando essas informações. Isso
 significa que:
 
