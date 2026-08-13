@@ -3,6 +3,10 @@
 Este manual explica como usar o sistema de organização de turmas no dia a dia.
 Não é necessário conhecimento técnico para seguir os passos abaixo.
 
+> Este manual também pode ser baixado em PDF, com a logo do SENAC na capa, diretamente pelo
+> sistema: use o botão **"Baixar manual (PDF)"** na barra lateral, em qualquer tela. Não é
+> necessário ter nenhum dado cadastrado para baixá-lo.
+
 ## O que é o sistema
 
 O Horários Senac é uma ferramenta interna para organizar a formação de turmas: cadastrar

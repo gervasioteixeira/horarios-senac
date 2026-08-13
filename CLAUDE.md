@@ -64,7 +64,8 @@ src/
     holidayEngine.ts      # feriados nacionais (fixos + móveis via algoritmo de Gauss para Páscoa)
     conflictChecker.ts     # detecta choque de horário do mesmo professor
     backup.ts          # export/import JSON (download/upload)
-    pdfGenerator.ts       # geração de PDF de turma e de professor
+    pdfGenerator.ts       # geração de PDF de turma, de professor e do manual do usuário; INSTITUTIONAL_CREDITS e INSTITUTIONAL_LOGO_PATH centralizados aqui
+  content/userManual.ts     # conteúdo estruturado (seções/parágrafos/listas) do manual, consumido pelo generateUserManualPdf
   stores/              # Pinia — cada store persiste automaticamente no localStorage
     teachers.ts, courses.ts, holidays.ts, classGroups.ts
   composables/useLocalStorage.ts # helpers de leitura/escrita/persistência automática no localStorage
@@ -74,9 +75,25 @@ src/
   views/               # DashboardView, CoursesView, ClassGroupsView, TeachersView, HolidaysView
   router/index.ts
 tests/unit/*.spec.ts       # testes dos services/ (ver seção "Regra de testes" abaixo)
-docs/MANUAL-DO-USUARIO.md    # manual em PT-BR para a cliente (não-técnica)
+docs/MANUAL-DO-USUARIO.md    # manual em PT-BR para a cliente (não-técnica) — fonte "narrativa"; ver também src/content/userManual.ts (fonte estruturada usada no PDF)
+public/senac-logo.png      # logo oficial do SENAC (fundo transparente), usada como favicon do site e na capa do manual em PDF
 .github/workflows/deploy.yml   # build + testes + deploy automático no GitHub Pages a cada push em main
 ```
+
+## Identidade institucional (créditos e logo)
+
+O projeto é de uso interno do **SENAC-PB — CEP Cajazeiras**, desenvolvido por Gervásio Teixeira
+(gervasio.eufrazino@pb.senac.br), colaborador do SENAC-PB. Esses dados ficam centralizados em
+`INSTITUTIONAL_CREDITS` (`src/services/pdfGenerator.ts`) e são reutilizados tanto no rodapé fixo
+da aplicação (`App.vue`) quanto no rodapé de todas as páginas de todo PDF gerado pelo sistema
+(`applyFooterToAllPages`). **Não duplique esses textos em outro lugar** — sempre importe a
+constante.
+
+A logo oficial do SENAC (`public/senac-logo.png`, fundo transparente) é usada como favicon do
+site e na capa do PDF do manual do usuário (`generateUserManualPdf`), via `INSTITUTIONAL_LOGO_PATH`.
+Se o arquivo for removido, a geração do PDF não quebra — cai automaticamente em um espaço
+reservado com o texto "Logo SENAC" no lugar da imagem (`tryLoadImageAsDataUrl` retorna `null`
+silenciosamente em qualquer falha de carregamento).
 
 ## Modelo de dados (resumo — ver `src/types/index.ts` para os tipos completos)
 
@@ -100,6 +117,7 @@ docs/MANUAL-DO-USUARIO.md    # manual em PT-BR para a cliente (não-técnica)
 | Cor do professor refletida no calendário | `Teacher.colorHex`, consumido em `ClassCalendarView.vue` via `:style` (Tailwind não gera classes para hex arbitrário em runtime) |
 | Visões de calendário (dia/semana/mês/semestre/ano) | `ClassCalendarView.vue` — um único componente com `viewMode` local; semestre/ano mostram mini-meses clicáveis que abrem a visão de mês |
 | Limpar todos os dados salvos / forçar atualização do app | `src/components/shared/AppMaintenanceControls.vue`, fixo na sidebar (`App.vue`). "Limpar dados" exige dupla confirmação e usa `clearAllLocalStorage` de `useLocalStorage.ts`. "Buscar atualizações" limpa Cache API/Service Worker (se existirem) e recarrega com um query param de cache-busting — não apaga dados |
+| Manual do usuário para download público em PDF | Botão "Baixar manual (PDF)" fixo na sidebar (`App.vue`) → `generateUserManualPdf` em `src/services/pdfGenerator.ts`, que lê o conteúdo de `src/content/userManual.ts`. Não depende de nenhum dado cadastrado — funciona mesmo com o sistema "vazio" |
 
 ## Regra de testes (evitar regressão)
 

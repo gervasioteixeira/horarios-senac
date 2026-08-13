@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { RouterLink, RouterView } from "vue-router"
 import BackupControls from "./components/shared/BackupControls.vue"
 import AppMaintenanceControls from "./components/shared/AppMaintenanceControls.vue"
+import { downloadPdf, generateUserManualPdf, INSTITUTIONAL_CREDITS } from "./services/pdfGenerator"
 
 const navItems = [
   { to: "/", label: "Painel" },
@@ -10,6 +12,18 @@ const navItems = [
   { to: "/professores", label: "Professores" },
   { to: "/feriados", label: "Feriados" },
 ]
+
+const generatingManual = ref(false)
+
+async function handleDownloadManual(): Promise<void> {
+  generatingManual.value = true
+  try {
+    const doc = await generateUserManualPdf()
+    downloadPdf(doc, "manual-do-usuario-horarios-senac.pdf")
+  } finally {
+    generatingManual.value = false
+  }
+}
 </script>
 
 <template>
@@ -38,6 +52,18 @@ const navItems = [
           <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Manutenção</p>
           <AppMaintenanceControls />
         </div>
+
+        <div class="mt-6 border-t border-slate-200 pt-4">
+          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Ajuda</p>
+          <button
+            type="button"
+            class="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            :disabled="generatingManual"
+            @click="handleDownloadManual"
+          >
+            📖 {{ generatingManual ? "Gerando..." : "Baixar manual (PDF)" }}
+          </button>
+        </div>
       </aside>
 
       <div class="flex flex-1 flex-col">
@@ -46,10 +72,10 @@ const navItems = [
         </main>
 
         <footer class="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-400">
-          Todos os direitos reservados<br />
-          Desenvolvido por: Gervásio Teixeira —
-          <a href="mailto:gervasio.eufrazino@pb.senac.br" class="text-slate-500 hover:text-slate-700 hover:underline">
-            gervasio.eufrazino@pb.senac.br
+          Todos os direitos reservados — {{ INSTITUTIONAL_CREDITS.organization }}<br />
+          Desenvolvido por: {{ INSTITUTIONAL_CREDITS.developedBy }} —
+          <a :href="`mailto:${INSTITUTIONAL_CREDITS.contactEmail}`" class="text-slate-500 hover:text-slate-700 hover:underline">
+            {{ INSTITUTIONAL_CREDITS.contactEmail }}
           </a>
         </footer>
       </div>
