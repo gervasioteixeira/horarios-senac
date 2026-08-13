@@ -69,8 +69,8 @@ src/
     teachers.ts, courses.ts, holidays.ts, classGroups.ts
   composables/useLocalStorage.ts # helpers de leitura/escrita/persistência automática no localStorage
   components/forms/       # ClassGroupForm, CourseForm, TeacherForm, HolidayForm
-  components/calendar/     # MonthlyBreakdown (tabela), ClassCalendarView (grade mensal colorida por professor)
-  components/shared/      # BackupControls, ConflictWarning
+  components/calendar/     # MonthlyBreakdown (tabela), ClassCalendarView (visões dia/semana/mês/semestre/ano, colorido por professor)
+  components/shared/      # BackupControls (export/import JSON), AppMaintenanceControls (limpar dados + forçar atualização), ConflictWarning
   views/               # DashboardView, CoursesView, ClassGroupsView, TeachersView, HolidaysView
   router/index.ts
 tests/unit/*.spec.ts       # testes dos services/ (ver seção "Regra de testes" abaixo)
@@ -98,6 +98,8 @@ docs/MANUAL-DO-USUARIO.md    # manual em PT-BR para a cliente (não-técnica)
 | Faixas de horário estritas permitidas (manhã/tarde/noite) | `src/constants/schedule.ts` (`ALLOWED_TIME_SLOTS`) — o formulário deve sempre usar essa lista, nunca aceitar horário livre |
 | Bloqueio de choque de horário do mesmo professor | `src/services/conflictChecker.ts` (`findScheduleConflict`) — chamado dentro de `classGroups.ts` store no `save()`, que bloqueia e retorna o conflito em vez de salvar |
 | Cor do professor refletida no calendário | `Teacher.colorHex`, consumido em `ClassCalendarView.vue` via `:style` (Tailwind não gera classes para hex arbitrário em runtime) |
+| Visões de calendário (dia/semana/mês/semestre/ano) | `ClassCalendarView.vue` — um único componente com `viewMode` local; semestre/ano mostram mini-meses clicáveis que abrem a visão de mês |
+| Limpar todos os dados salvos / forçar atualização do app | `src/components/shared/AppMaintenanceControls.vue`, fixo na sidebar (`App.vue`). "Limpar dados" exige dupla confirmação e usa `clearAllLocalStorage` de `useLocalStorage.ts`. "Buscar atualizações" limpa Cache API/Service Worker (se existirem) e recarrega com um query param de cache-busting — não apaga dados |
 
 ## Regra de testes (evitar regressão)
 

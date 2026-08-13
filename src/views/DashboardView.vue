@@ -85,6 +85,17 @@ const stats = computed(() => [
       <p class="text-sm text-slate-500">Visão geral do sistema de horários.</p>
     </div>
 
+    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+      <p class="font-medium">⚠ Os dados ficam salvos apenas neste navegador, neste computador.</p>
+      <p class="mt-1 text-amber-700">
+        Nada é enviado para nenhum servidor. Se precisar acessar em outro computador ou outro
+        navegador, use <strong>Baixar backup</strong> no menu lateral para exportar os dados e
+        <strong>Importar backup</strong> no outro navegador para restaurá-los. Recomendamos fazer
+        backup regularmente — limpar o histórico/cache do navegador sem backup apaga os dados
+        permanentemente.
+      </p>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <RouterLink
         v-for="stat in stats"

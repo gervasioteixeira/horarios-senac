@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router"
 import BackupControls from "./components/shared/BackupControls.vue"
+import AppMaintenanceControls from "./components/shared/AppMaintenanceControls.vue"
 
 const navItems = [
   { to: "/", label: "Painel" },
@@ -32,11 +33,26 @@ const navItems = [
           <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Backup</p>
           <BackupControls />
         </div>
+
+        <div class="mt-6 border-t border-slate-200 pt-4">
+          <p class="mb-2 px-2 text-xs font-semibold uppercase text-slate-400">Manutenção</p>
+          <AppMaintenanceControls />
+        </div>
       </aside>
 
-      <main class="flex-1 overflow-x-auto p-6">
-        <RouterView />
-      </main>
+      <div class="flex flex-1 flex-col">
+        <main class="flex-1 overflow-x-auto p-6">
+          <RouterView />
+        </main>
+
+        <footer class="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-400">
+          Todos os direitos reservados<br />
+          Desenvolvido por: Gervásio Teixeira —
+          <a href="mailto:gervasio.eufrazino@pb.senac.br" class="text-slate-500 hover:text-slate-700 hover:underline">
+            gervasio.eufrazino@pb.senac.br
+          </a>
+        </footer>
+      </div>
     </div>
   </div>
 </template>
