@@ -82,6 +82,22 @@ export interface MonthlyBreakdownEntry {
 
 export type ClassGroupStatus = "planned" | "ongoing" | "finished" | "cancelled"
 
+/**
+ * Ajuste pontual de calendário aplicado a partir de uma aula específica
+ * (ex: professor faltou uma semana). Aulas ANTERIORES a `fromDate` no
+ * cronograma nunca mudam; a aula em `fromDate` e todas as seguintes
+ * deslocam `shiftDays` dias corridos, continuando a respeitar os dias
+ * da semana da turma (ver calendarEngine.ts). Diferente de mover a
+ * turma inteira (que altera `startDate`), o adiamento não mexe no
+ * início da turma nem nas aulas já dadas.
+ */
+export interface ClassPostponement {
+  /** Data (no cronograma calculado sem este ajuste) a partir da qual o deslocamento passa a valer. */
+  fromDate: string
+  /** Dias corridos a deslocar a aula em `fromDate` e as seguintes. Sempre positivo (adiamento). */
+  shiftDays: number
+}
+
 export interface ClassGroup {
   id: string
   courseId: string
@@ -104,6 +120,12 @@ export interface ClassGroup {
   weekdays: Weekday[]
   timeSlot: TimeSlot
   status: ClassGroupStatus
+  /**
+   * Ajustes pontuais de calendário (ex: professor faltou uma semana),
+   * aplicados em ordem cronológica de `fromDate`. Opcional — turmas sem
+   * nenhum ajuste omitem o campo ou têm lista vazia.
+   */
+  postponements?: ClassPostponement[]
 
   /** Campos calculados pelo calendarEngine — recalculados a cada alteração relevante. */
   computedEndDate: string | null

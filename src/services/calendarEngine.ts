@@ -1,4 +1,4 @@
-import type { MonthlyBreakdownEntry, Weekday } from "../types"
+import type { ClassPostponement, MonthlyBreakdownEntry, Weekday } from "../types"
 
 export interface CalculateScheduleParams {
   /** Data de início no formato "YYYY-MM-DD". */
@@ -11,6 +11,15 @@ export interface CalculateScheduleParams {
   weekdays: Weekday[]
   /** Conjunto de datas de feriado ("YYYY-MM-DD") a serem puladas. */
   holidayDates: Set<string>
+  /**
+   * Ajustes pontuais de calendário (ver ClassPostponement) aplicados,
+   * em ordem, durante a geração: ao alcançar a `fromDate` de um ajuste
+   * (comparada à data corrente do cronograma "puro", sem ajustes
+   * anteriores já consumidos), soma `shiftDays` ao cursor antes de
+   * continuar procurando o próximo dia letivo válido. Datas anteriores
+   * a `fromDate` nunca são afetadas.
+   */
+  postponements?: ClassPostponement[]
 }
 
 export interface CalculateScheduleResult {
@@ -50,7 +59,7 @@ function formatIsoDate(date: Date): string {
  * - Acumula a carga horária diária em cada dia válido até atingir o total.
  */
 export function calculateSchedule(params: CalculateScheduleParams): CalculateScheduleResult {
-  const { startDate, totalWorkloadHours, dailyWorkloadHours, weekdays, holidayDates } = params
+  const { startDate, totalWorkloadHours, dailyWorkloadHours, weekdays, holidayDates, postponements } = params
 
   if (totalWorkloadHours <= 0 || dailyWorkloadHours <= 0 || weekdays.length === 0) {
     return { endDate: null, monthlyBreakdown: [], classDates: [] }
@@ -60,12 +69,22 @@ export function calculateSchedule(params: CalculateScheduleParams): CalculateSch
   const classDates: string[] = []
   const breakdownMap = new Map<string, MonthlyBreakdownEntry>()
 
+  // Ajustes pendentes, em ordem cronológica de fromDate; cada um é consumido
+  // (removido da fila) na primeira vez que o cursor o alcança ou ultrapassa.
+  const pendingPostponements = [...(postponements ?? [])].sort((a, b) => a.fromDate.localeCompare(b.fromDate))
+
   let cursor = parseIsoDate(startDate)
   let accumulatedHours = 0
   let iterations = 0
 
   while (accumulatedHours < totalWorkloadHours && iterations < MAX_ITERATIONS) {
     iterations++
+
+    while (pendingPostponements.length > 0 && formatIsoDate(cursor) >= pendingPostponements[0].fromDate) {
+      const next = pendingPostponements.shift()!
+      cursor.setUTCDate(cursor.getUTCDate() + next.shiftDays)
+    }
+
     const isoDate = formatIsoDate(cursor)
     const dayOfWeek = cursor.getUTCDay() // 0=domingo ... 6=sábado
 

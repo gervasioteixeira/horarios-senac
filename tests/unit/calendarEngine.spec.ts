@@ -108,4 +108,72 @@ describe("calendarEngine.calculateSchedule", () => {
     expect(result.endDate).toBeNull()
     expect(result.classDates).toHaveLength(0)
   })
+
+  describe("postponements (adiamento pontual, ex: falta do professor)", () => {
+    it("desloca a aula em fromDate e todas as seguintes, mantendo as anteriores intactas", () => {
+      const base = calculateSchedule({
+        startDate: "2026-01-05", // segunda
+        totalWorkloadHours: 40,
+        dailyWorkloadHours: 4,
+        weekdays: [1, 3, 5],
+        holidayDates: new Set(),
+      })
+
+      // Adia a partir da 5ª aula em 7 dias corridos (uma semana de falta).
+      const anchorDate = base.classDates[4]
+      const adjusted = calculateSchedule({
+        startDate: "2026-01-05",
+        totalWorkloadHours: 40,
+        dailyWorkloadHours: 4,
+        weekdays: [1, 3, 5],
+        holidayDates: new Set(),
+        postponements: [{ fromDate: anchorDate, shiftDays: 7 }],
+      })
+
+      // Aulas anteriores permanecem idênticas.
+      expect(adjusted.classDates.slice(0, 4)).toEqual(base.classDates.slice(0, 4))
+      // Mesmo número de aulas (carga horária total preservada).
+      expect(adjusted.classDates).toHaveLength(base.classDates.length)
+      // A partir da aula ajustada, todas as datas são posteriores ao cronograma original.
+      for (let i = 4; i < adjusted.classDates.length; i++) {
+        expect(adjusted.classDates[i] > base.classDates[i]).toBe(true)
+      }
+      // Continua respeitando os dias da semana da turma.
+      for (const iso of adjusted.classDates) {
+        const day = new Date(iso + "T00:00:00Z").getUTCDay()
+        expect([1, 3, 5]).toContain(day)
+      }
+      // Data de término desloca para depois.
+      expect(adjusted.endDate! > base.endDate!).toBe(true)
+    })
+
+    it("aplica múltiplos postponements em cascata, em ordem cronológica", () => {
+      const base = calculateSchedule({
+        startDate: "2026-01-05",
+        totalWorkloadHours: 40,
+        dailyWorkloadHours: 4,
+        weekdays: [1, 3, 5],
+        holidayDates: new Set(),
+      })
+
+      const secondAnchor = base.classDates[2]
+      const fifthAnchor = base.classDates[5]
+
+      const adjusted = calculateSchedule({
+        startDate: "2026-01-05",
+        totalWorkloadHours: 40,
+        dailyWorkloadHours: 4,
+        weekdays: [1, 3, 5],
+        holidayDates: new Set(),
+        // Fora de ordem de propósito — a função deve ordenar internamente por fromDate.
+        postponements: [
+          { fromDate: fifthAnchor, shiftDays: 3 },
+          { fromDate: secondAnchor, shiftDays: 7 },
+        ],
+      })
+
+      expect(adjusted.classDates.slice(0, 2)).toEqual(base.classDates.slice(0, 2))
+      expect(adjusted.classDates).toHaveLength(base.classDates.length)
+    })
+  })
 })

@@ -72,3 +72,35 @@ export function computeRescheduleDraft(input: RescheduleDraftInput): RescheduleD
     requiresAdvanceConfirmation: proposedStartDate < currentStartDate,
   }
 }
+
+export interface PostponeDraftInput {
+  /** Data original (no cronograma calculado) da aula que foi arrastada. */
+  draggedFromDate: string
+  /** Data para onde a aula foi solta. */
+  draggedToDate: string
+}
+
+export type PostponeDraftResult =
+  | { ok: true; shiftDays: number }
+  /**
+   * Adiamento pontual só empurra aulas para frente (representa uma falta/
+   * pausa do professor) — soltar em uma data igual ou anterior à original
+   * não é um adiamento válido; a UI deve orientar o usuário a soltar em
+   * uma data posterior, ou usar o modo "mover a turma inteira" se a
+   * intenção era antecipar.
+   */
+  | { ok: false; reason: "not-forward" }
+
+/**
+ * Calcula o efeito de "adiar a partir desta aula" (ex: professor faltou
+ * uma semana): a aula em `draggedFromDate` e todas as seguintes no
+ * cronograma deslocam `shiftDays` dias corridos para frente; aulas
+ * anteriores nunca mudam (ver ClassPostponement em types/index.ts).
+ */
+export function computePostponeDraft(input: PostponeDraftInput): PostponeDraftResult {
+  const shiftDays = diffInDays(input.draggedFromDate, input.draggedToDate)
+  if (shiftDays <= 0) {
+    return { ok: false, reason: "not-forward" }
+  }
+  return { ok: true, shiftDays }
+}

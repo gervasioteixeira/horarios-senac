@@ -4,7 +4,7 @@ import type { ClassGroup } from "../types"
 import { LOCAL_STORAGE_KEYS, persistToLocalStorage, readFromLocalStorage } from "../composables/useLocalStorage"
 import { calculateSchedule } from "../services/calendarEngine"
 import { findCapacityConflict, findScheduleConflict, type CapacityConflict, type ScheduleConflict } from "../services/conflictChecker"
-import { computeRescheduleDraft } from "../services/rescheduler"
+import { computePostponeDraft, computeRescheduleDraft } from "../services/rescheduler"
 import { useHolidaysStore } from "./holidays"
 import { useRoomsStore } from "./rooms"
 import { useCoursesStore } from "./courses"
@@ -31,7 +31,10 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
   persistToLocalStorage(LOCAL_STORAGE_KEYS.classGroups, classGroups)
 
   /** Roda o motor de calendário para um rascunho de turma, usando os feriados cadastrados. */
-  function computeSchedule(draft: Pick<ClassGroupDraft, "startDate" | "dailyWorkloadHours" | "weekdays">, course: { totalWorkloadHours: number }) {
+  function computeSchedule(
+    draft: Pick<ClassGroupDraft, "startDate" | "dailyWorkloadHours" | "weekdays" | "postponements">,
+    course: { totalWorkloadHours: number },
+  ) {
     const holidaysStore = useHolidaysStore()
     const startYear = new Date(draft.startDate).getFullYear()
     // Garante feriados cobrindo alguns anos à frente, mesmo que a turma seja longa.
@@ -46,6 +49,7 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
       dailyWorkloadHours: draft.dailyWorkloadHours,
       weekdays: draft.weekdays,
       holidayDates,
+      postponements: draft.postponements,
     })
   }
 
@@ -55,9 +59,15 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
    * professor OU do espaço físico, e (2) se o número de alunos
    * previstos excede a capacidade do espaço. Se qualquer um ocorrer,
    * NÃO salva (regra de negócio 3, estendida a espaços físicos).
+   *
+   * Editar a turma pelo formulário sempre descarta qualquer ajuste
+   * pontual de calendário (`postponements`) aplicado anteriormente por
+   * arraste no calendário — mudar startDate/weekdays/carga diária
+   * regenera o cronograma do zero, e uma âncora de ajuste antiga
+   * ficaria órfã/sem sentido na nova sequência.
    */
   function save(draft: ClassGroupDraft, course: { totalWorkloadHours: number }, existingId?: string): SaveClassGroupResult {
-    const schedule = computeSchedule(draft, course)
+    const schedule = computeSchedule({ ...draft, postponements: undefined }, course)
 
     const conflict = findScheduleConflict(
       {
@@ -90,6 +100,7 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
       const existing = classGroups.value.find((c) => c.id === existingId)
       if (!existing) return { ok: false }
       Object.assign(existing, draft, {
+        postponements: undefined,
         computedEndDate: schedule.endDate,
         computedMonthlyBreakdown: schedule.monthlyBreakdown,
         computedClassDates: schedule.classDates,
@@ -100,6 +111,7 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
 
     const classGroup: ClassGroup = {
       ...draft,
+      postponements: undefined,
       id: generateId(),
       computedEndDate: schedule.endDate,
       computedMonthlyBreakdown: schedule.monthlyBreakdown,
@@ -164,7 +176,10 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
     const course = coursesStore.getById(existing.courseId)
     if (!course) return { ok: false }
 
-    const nextDraft = { startDate: draft.proposedStartDate, dailyWorkloadHours: existing.dailyWorkloadHours, weekdays: existing.weekdays }
+    // Mover a turma inteira regenera o cronograma do zero a partir da nova
+    // startDate — qualquer ajuste pontual (postponements) anterior é descartado
+    // pela mesma razão de save(): a âncora antiga não faz mais sentido.
+    const nextDraft = { startDate: draft.proposedStartDate, dailyWorkloadHours: existing.dailyWorkloadHours, weekdays: existing.weekdays, postponements: undefined }
     const schedule = computeSchedule(nextDraft, course)
 
     const conflict = findScheduleConflict(
@@ -194,6 +209,74 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
 
     Object.assign(existing, {
       startDate: draft.proposedStartDate,
+      postponements: undefined,
+      computedEndDate: schedule.endDate,
+      computedMonthlyBreakdown: schedule.monthlyBreakdown,
+      computedClassDates: schedule.classDates,
+      updatedAt: new Date().toISOString(),
+    })
+
+    return { ok: true, classGroup: existing }
+  }
+
+  /**
+   * Adia (por arraste no calendário) a partir de uma aula específica —
+   * ex: professor faltou uma semana. A aula em `draggedFromDate` (no
+   * cronograma atual) e todas as seguintes deslocam para frente o mesmo
+   * número de dias corridos até `draggedToDate`; aulas anteriores nunca
+   * mudam, e `startDate` da turma não é alterada. Só aceita adiar para
+   * uma data POSTERIOR à original — soltar em data igual ou anterior
+   * retorna `ok: false` sem `conflict`/`capacityConflict` (a UI deve
+   * tratar como arraste inválido, sem exibir os modais de conflito).
+   * Conflito de horário/capacidade bloqueia o salvamento, como em `save()`.
+   */
+  function postpone(id: string, draggedFromDate: string, draggedToDate: string): RescheduleResult {
+    const existing = classGroups.value.find((c) => c.id === id)
+    if (!existing) return { ok: false }
+
+    const draft = computePostponeDraft({ draggedFromDate, draggedToDate })
+    if (!draft.ok) return { ok: false }
+
+    const coursesStore = useCoursesStore()
+    const course = coursesStore.getById(existing.courseId)
+    if (!course) return { ok: false }
+
+    const nextPostponements = [...(existing.postponements ?? []), { fromDate: draggedFromDate, shiftDays: draft.shiftDays }]
+    const nextDraft = {
+      startDate: existing.startDate,
+      dailyWorkloadHours: existing.dailyWorkloadHours,
+      weekdays: existing.weekdays,
+      postponements: nextPostponements,
+    }
+    const schedule = computeSchedule(nextDraft, course)
+
+    const conflict = findScheduleConflict(
+      {
+        id: existing.id,
+        teacherId: existing.teacherId,
+        roomId: existing.roomId,
+        startDate: existing.startDate,
+        endDate: schedule.endDate,
+        weekdays: existing.weekdays,
+        timeSlot: existing.timeSlot,
+      },
+      classGroups.value,
+    )
+
+    if (conflict) {
+      return { ok: false, conflict }
+    }
+
+    if (existing.roomId) {
+      const roomsStore = useRoomsStore()
+      const capacityConflict = findCapacityConflict(existing.expectedStudents, roomsStore.getById(existing.roomId))
+      if (capacityConflict) {
+        return { ok: false, capacityConflict }
+      }
+    }
+
+    Object.assign(existing, {
+      postponements: nextPostponements,
       computedEndDate: schedule.endDate,
       computedMonthlyBreakdown: schedule.monthlyBreakdown,
       computedClassDates: schedule.classDates,
@@ -223,5 +306,5 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
     classGroups.value = newClassGroups
   }
 
-  return { classGroups, computeSchedule, save, reschedule, remove, getById, getByTeacherId, getByRoomId, replaceAll }
+  return { classGroups, computeSchedule, save, reschedule, postpone, remove, getById, getByTeacherId, getByRoomId, replaceAll }
 })

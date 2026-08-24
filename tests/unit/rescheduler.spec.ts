@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { computeRescheduleDraft, diffInDays, shiftIsoDate } from "../../src/services/rescheduler"
+import { computePostponeDraft, computeRescheduleDraft, diffInDays, shiftIsoDate } from "../../src/services/rescheduler"
 
 describe("rescheduler.diffInDays", () => {
   it("calcula diferença positiva entre datas", () => {
@@ -72,5 +72,22 @@ describe("rescheduler.computeRescheduleDraft", () => {
     expect(result.deltaDays).toBe(0)
     expect(result.proposedStartDate).toBe("2026-02-02")
     expect(result.requiresAdvanceConfirmation).toBe(false)
+  })
+})
+
+describe("rescheduler.computePostponeDraft", () => {
+  it("calcula o shiftDays ao arrastar uma aula para uma data posterior", () => {
+    const result = computePostponeDraft({ draggedFromDate: "2026-02-16", draggedToDate: "2026-02-23" })
+    expect(result).toEqual({ ok: true, shiftDays: 7 })
+  })
+
+  it("rejeita soltar na mesma data (nenhum adiamento)", () => {
+    const result = computePostponeDraft({ draggedFromDate: "2026-02-16", draggedToDate: "2026-02-16" })
+    expect(result).toEqual({ ok: false, reason: "not-forward" })
+  })
+
+  it("rejeita arrastar para uma data anterior (adiamento não pode andar para trás)", () => {
+    const result = computePostponeDraft({ draggedFromDate: "2026-02-16", draggedToDate: "2026-02-10" })
+    expect(result).toEqual({ ok: false, reason: "not-forward" })
   })
 })

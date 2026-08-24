@@ -7,6 +7,7 @@ import { timeSlotLabel } from "../../constants/schedule"
 import type { ScheduleConflict, CapacityConflict } from "../../services/conflictChecker"
 import RescheduleConfirmModal from "../shared/RescheduleConfirmModal.vue"
 import RescheduleConflictModal from "../shared/RescheduleConflictModal.vue"
+import RescheduleModeModal from "../shared/RescheduleModeModal.vue"
 
 const classGroupsStore = useClassGroupsStore()
 const teachersStore = useTeachersStore()
@@ -100,10 +101,14 @@ interface DragPayload {
 const draggingEvent = ref<DragPayload | null>(null)
 const dragOverIso = ref<string | null>(null)
 
-/** Aguardando confirmação de antecipação de curso (modal). */
+/** Escolha pendente do usuário (turma inteira x só a partir desta aula), logo após soltar. */
+const pendingModeChoice = ref<{ classGroupId: string; fromDate: string; toDate: string } | null>(null)
+/** Aguardando confirmação de antecipação de curso (modal) — só se aplica ao modo "turma inteira". */
 const pendingAdvanceConfirmation = ref<{ classGroupId: string; fromDate: string; toDate: string; proposedStartDate: string } | null>(null)
 /** Conflito detectado ao tentar aplicar o reagendamento (modal). */
 const rescheduleConflict = ref<{ conflict?: ScheduleConflict; capacityConflict?: CapacityConflict } | null>(null)
+/** Aviso simples de arraste inválido (ex: adiamento pontual solto numa data não posterior). */
+const rescheduleWarning = ref<string | null>(null)
 
 function onEventDragStart(classGroupId: string, fromDate: string): void {
   draggingEvent.value = { classGroupId, fromDate }
@@ -126,7 +131,36 @@ function onCellDrop(toDate: string): void {
   if (!dragged) return
   if (dragged.fromDate === toDate) return
 
-  applyReschedule(dragged.classGroupId, dragged.fromDate, toDate, false)
+  pendingModeChoice.value = { classGroupId: dragged.classGroupId, fromDate: dragged.fromDate, toDate }
+}
+
+function chooseMoveWholeClassGroup(): void {
+  const pending = pendingModeChoice.value
+  pendingModeChoice.value = null
+  if (!pending) return
+  applyReschedule(pending.classGroupId, pending.fromDate, pending.toDate, false)
+}
+
+function choosePostponeFromHere(): void {
+  const pending = pendingModeChoice.value
+  pendingModeChoice.value = null
+  if (!pending) return
+
+  const result = classGroupsStore.postpone(pending.classGroupId, pending.fromDate, pending.toDate)
+
+  if (result.ok) return
+
+  if (result.conflict || result.capacityConflict) {
+    rescheduleConflict.value = { conflict: result.conflict, capacityConflict: result.capacityConflict }
+    return
+  }
+
+  rescheduleWarning.value =
+    "Só é possível adiar uma aula para uma data POSTERIOR à original — para antecipar, use a opção \"Mover a turma inteira\"."
+}
+
+function cancelModeChoice(): void {
+  pendingModeChoice.value = null
 }
 
 function applyReschedule(classGroupId: string, fromDate: string, toDate: string, confirmAdvance: boolean): void {
@@ -159,6 +193,10 @@ function cancelAdvanceReschedule(): void {
 
 function closeRescheduleConflict(): void {
   rescheduleConflict.value = null
+}
+
+function closeRescheduleWarning(): void {
+  rescheduleWarning.value = null
 }
 
 // ---------- Navegação: avança/volta um "passo" de acordo com a visão ativa ----------
@@ -463,6 +501,13 @@ const periodLabel = computed(() => {
       </button>
     </div>
 
+    <RescheduleModeModal
+      v-if="pendingModeChoice"
+      @move-whole="chooseMoveWholeClassGroup"
+      @postpone-from-here="choosePostponeFromHere"
+      @cancel="cancelModeChoice"
+    />
+
     <RescheduleConfirmModal
       v-if="pendingAdvanceConfirmation"
       :new-start-date="pendingAdvanceConfirmation.proposedStartDate"
@@ -476,5 +521,25 @@ const periodLabel = computed(() => {
       :capacity-conflict="rescheduleConflict.capacityConflict"
       @close="closeRescheduleConflict"
     />
+
+    <div
+      v-if="rescheduleWarning"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="closeRescheduleWarning"
+    >
+      <div class="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-slate-800">
+        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Não foi possível adiar a aula</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ rescheduleWarning }}</p>
+        <div class="mt-4 flex justify-end">
+          <button
+            type="button"
+            class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
+            @click="closeRescheduleWarning"
+          >
+            Entendi
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
