@@ -61,6 +61,7 @@ src/
   types/index.ts         # TODO o modelo de dados (Teacher, Course, Holiday, ClassGroup, TimeSlot, ...)
   constants/schedule.ts    # ALLOWED_TIME_SLOTS (horários estritos permitidos), labels de dias da semana
   constants/brand.ts     # BRAND_COLORS institucionais (extraídos da logo), ver seção "Identidade institucional"
+  constants/format.ts     # formatDateBr — formatação de data ISO para pt-BR (dd/mm/aaaa) na UI
   composables/useTheme.ts   # preferência de tema claro/escuro/sistema, aplica classe .dark no <html>
   services/            # lógica de negócio pura (sem Vue, testável isoladamente)
     calendarEngine.ts     # calcula data de término e distribuição mensal de aulas
@@ -159,6 +160,7 @@ no calendário) não precisam de `dark:` — já funcionam em ambos os temas.
 | Cálculo de data de término e distribuição mensal, pulando domingos/dias não letivos/feriados | `src/services/calendarEngine.ts` (`calculateSchedule`) |
 | Feriados nacionais fixos e móveis (Páscoa, Carnaval, Corpus Christi) | `src/services/holidayEngine.ts` |
 | Faixas de horário estritas permitidas (manhã/tarde/noite) | `src/constants/schedule.ts` (`ALLOWED_TIME_SLOTS`) — o formulário deve sempre usar essa lista, nunca aceitar horário livre |
+| Formatação de data para exibição (pt-BR, dd/mm/aaaa) | `src/constants/format.ts` (`formatDateBr`) — datas de negócio são sempre string ISO "YYYY-MM-DD" internamente; **nunca renderize a string ISO crua na UI**, sempre passe por `formatDateBr` antes de exibir. Usado em `ClassGroupsView`, `DashboardView`, `HolidaysView`, `ClassGroupForm` (preview de término), `ConflictWarning`, `RescheduleActionModal`, `RescheduleConfirmModal`. `pdfGenerator.ts` tem sua própria `formatDateBr` interna (com fallback `"—"` para `null`) — mantida separada por ser específica da geração de PDF |
 | Bloqueio de choque de horário (mesmo professor OU mesmo espaço) | `src/services/conflictChecker.ts` (`findScheduleConflict`) — checa professor primeiro, depois espaço; retorna `ScheduleConflict.kind: "teacher" \| "room"`. Chamado dentro de `classGroups.ts` store no `save()`, que bloqueia e retorna o conflito em vez de salvar. `ConflictWarning.vue` exibe mensagem diferente conforme `kind` |
 | Bloqueio por capacidade de alunos excedida | `src/services/conflictChecker.ts` (`findCapacityConflict`) — compara `ClassGroup.expectedStudents` com `Room.capacity`; só roda se ambos os dois estiverem preenchidos. `classGroups.ts` store retorna `SaveClassGroupResult.capacityConflict` (independente de `conflict`); `CapacityWarning.vue` exibe a mensagem |
 | Cor do professor refletida no calendário | `Teacher.colorHex`, consumido em `ClassCalendarView.vue` via `:style` (Tailwind não gera classes para hex arbitrário em runtime) |

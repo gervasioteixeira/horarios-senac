@@ -4,6 +4,7 @@ import type { ScheduleConflict } from "../../services/conflictChecker"
 import { useTeachersStore } from "../../stores/teachers"
 import { useRoomsStore } from "../../stores/rooms"
 import { WEEKDAY_LABELS } from "../../constants/schedule"
+import { formatDateBr } from "../../constants/format"
 
 const props = defineProps<{
   conflict: ScheduleConflict
@@ -42,16 +43,16 @@ const hint = computed(() =>
       <strong>"{{ conflict.conflictingClassGroup.name }}"</strong>
       (<strong>{{ roomName }}</strong>),
       nos dias <strong>{{ sharedWeekdaysLabel }}</strong>,
-      no período de <strong>{{ conflict.conflictingClassGroup.startDate }}</strong>
-      a <strong>{{ conflict.conflictingClassGroup.computedEndDate ?? "indefinido" }}</strong>.
+      no período de <strong>{{ formatDateBr(conflict.conflictingClassGroup.startDate) }}</strong>
+      a <strong>{{ conflict.conflictingClassGroup.computedEndDate ? formatDateBr(conflict.conflictingClassGroup.computedEndDate) : "indefinido" }}</strong>.
     </p>
     <p v-else class="mt-1">
       Esta turma colide com a turma
       <strong>"{{ conflict.conflictingClassGroup.name }}"</strong>
       do professor <strong>{{ teacherName }}</strong>,
       nos dias <strong>{{ sharedWeekdaysLabel }}</strong>,
-      no período de <strong>{{ conflict.conflictingClassGroup.startDate }}</strong>
-      a <strong>{{ conflict.conflictingClassGroup.computedEndDate ?? "indefinido" }}</strong>.
+      no período de <strong>{{ formatDateBr(conflict.conflictingClassGroup.startDate) }}</strong>
+      a <strong>{{ conflict.conflictingClassGroup.computedEndDate ? formatDateBr(conflict.conflictingClassGroup.computedEndDate) : "indefinido" }}</strong>.
     </p>
     <p class="mt-1 text-red-700 dark:text-red-400">{{ hint }}</p>
   </div>

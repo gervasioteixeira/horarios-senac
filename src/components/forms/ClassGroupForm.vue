@@ -7,6 +7,7 @@ import { useRoomsStore } from "../../stores/rooms"
 import { useClassGroupsStore, type ClassGroupDraft } from "../../stores/classGroups"
 import type { CapacityConflict, ScheduleConflict } from "../../services/conflictChecker"
 import { ALLOWED_TIME_SLOTS, ALL_WEEKDAYS, WEEKDAY_LABELS, timeSlotLabel } from "../../constants/schedule"
+import { formatDateBr } from "../../constants/format"
 import MonthlyBreakdown from "../calendar/MonthlyBreakdown.vue"
 import ConflictWarning from "../shared/ConflictWarning.vue"
 import CapacityWarning from "../shared/CapacityWarning.vue"
@@ -340,7 +341,7 @@ function handleSubmit(): void {
     <div v-if="preview" class="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700">
       <p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
         Previsão de término:
-        <span class="font-semibold text-slate-900 dark:text-slate-100">{{ preview.endDate ?? "não foi possível calcular" }}</span>
+        <span class="font-semibold text-slate-900 dark:text-slate-100">{{ preview.endDate ? formatDateBr(preview.endDate) : "não foi possível calcular" }}</span>
       </p>
       <MonthlyBreakdown :breakdown="preview.monthlyBreakdown" />
     </div>

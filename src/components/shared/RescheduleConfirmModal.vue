@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatDateBr } from "../../constants/format"
+
 defineProps<{
   /** Nova data de início proposta, formato "YYYY-MM-DD". */
   newStartDate: string
@@ -8,11 +10,6 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
-
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-")
-  return `${day}/${month}/${year}`
-}
 </script>
 
 <template>
@@ -20,9 +17,9 @@ function formatDate(iso: string): string {
     <div class="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-5 shadow-lg dark:bg-slate-800">
       <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Antecipar início da turma?</h3>
       <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-        A data de início atualmente definida é posterior ao dia para onde a aula foi arrastada.
+        A data de início atualmente definida é posterior à nova data escolhida.
         Para concluir, a data de início da turma precisa ser alterada para
-        <strong>{{ formatDate(newStartDate) }}</strong>, antecipando o curso.
+        <strong>{{ formatDateBr(newStartDate) }}</strong>, antecipando o curso.
       </p>
       <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Deseja confirmar a antecipação?</p>
       <div class="mt-4 flex justify-end gap-2">

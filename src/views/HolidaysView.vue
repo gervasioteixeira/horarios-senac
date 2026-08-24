@@ -3,6 +3,7 @@ import { computed, ref } from "vue"
 import { useHolidaysStore } from "../stores/holidays"
 import HolidayForm from "../components/forms/HolidayForm.vue"
 import type { Holiday } from "../types"
+import { formatDateBr } from "../constants/format"
 
 const holidaysStore = useHolidaysStore()
 
@@ -66,14 +67,10 @@ function openEditForm(holiday: Holiday): void {
 }
 
 function handleDelete(holiday: Holiday): void {
-  if (!window.confirm(`Excluir o feriado "${holiday.name}" (${holiday.date})?`)) return
+  if (!window.confirm(`Excluir o feriado "${holiday.name}" (${formatDateBr(holiday.date)})?`)) return
   holidaysStore.remove(holiday.id)
 }
 
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-")
-  return `${day}/${month}/${year}`
-}
 </script>
 
 <template>
@@ -115,7 +112,7 @@ function formatDate(iso: string): string {
         <table class="w-full min-w-[420px] text-left text-sm">
           <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
             <tr v-for="h in group.holidays" :key="h.id">
-              <td class="px-4 py-2 text-slate-600 dark:text-slate-300">{{ formatDate(h.date) }}</td>
+              <td class="px-4 py-2 text-slate-600 dark:text-slate-300">{{ formatDateBr(h.date) }}</td>
               <td class="px-4 py-2 text-slate-800 dark:text-slate-100">{{ h.name }}</td>
             </tr>
           </tbody>
@@ -158,7 +155,7 @@ function formatDate(iso: string): string {
               <td colspan="5" class="px-4 py-6 text-center text-slate-400 dark:text-slate-500">Nenhum feriado customizado cadastrado ainda.</td>
             </tr>
             <tr v-for="h in sortedCustomHolidays" :key="h.id">
-              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ formatDate(h.date) }}</td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ formatDateBr(h.date) }}</td>
               <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ h.name }}</td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ SCOPE_LABELS[h.scope] }}</td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ h.recurring ? "Sim" : "Não" }}</td>

@@ -6,6 +6,7 @@ import { useCoursesStore } from "../stores/courses"
 import { useClassGroupsStore } from "../stores/classGroups"
 import { useRoomsStore } from "../stores/rooms"
 import { timeSlotLabel } from "../constants/schedule"
+import { formatDateBr } from "../constants/format"
 
 const teachersStore = useTeachersStore()
 const coursesStore = useCoursesStore()
@@ -71,11 +72,6 @@ const upcomingThisWeek = computed<UpcomingClass[]>(() => {
   return result.sort((a, b) => a.date.localeCompare(b.date))
 })
 
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-")
-  return `${day}/${month}/${year}`
-}
-
 const stats = computed(() => [
   { label: "Professores", value: teachersStore.teachers.length, to: "/professores" },
   { label: "Cursos", value: coursesStore.courses.length, to: "/cursos" },
@@ -129,7 +125,7 @@ const stats = computed(() => [
             </div>
           </div>
           <div class="text-right text-xs text-slate-500 dark:text-slate-400">
-            <p class="font-medium text-slate-700 dark:text-slate-300">{{ formatDate(item.date) }}</p>
+            <p class="font-medium text-slate-700 dark:text-slate-300">{{ formatDateBr(item.date) }}</p>
             <p>{{ item.timeSlotText }}<template v-if="item.roomName"> · {{ item.roomName }}</template></p>
           </div>
         </li>

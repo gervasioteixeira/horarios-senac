@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
+import { formatDateBr } from "../../constants/format"
 
 const props = defineProps<{
   eventName: string
@@ -17,11 +18,6 @@ const emit = defineEmits<{
 const selectedDate = ref(props.currentDate)
 const mode = ref<"postpone" | "move" | null>(null)
 
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-")
-  return `${day}/${month}/${year}`
-}
-
 function confirm(): void {
   if (!mode.value || !selectedDate.value) return
   if (mode.value === "postpone") {
@@ -38,7 +34,7 @@ function confirm(): void {
       <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Reagendar aula</h3>
       <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
         {{ eventName }} — {{ courseName }}<br />
-        Data atual: <strong>{{ formatDate(currentDate) }}</strong>
+        Data atual: <strong>{{ formatDateBr(currentDate) }}</strong>
       </p>
 
       <div class="mt-4">

@@ -8,6 +8,7 @@ import ClassGroupForm from "../components/forms/ClassGroupForm.vue"
 import ClassCalendarView from "../components/calendar/ClassCalendarView.vue"
 import type { ClassGroup } from "../types"
 import { timeSlotLabel } from "../constants/schedule"
+import { formatDateBr } from "../constants/format"
 import { downloadPdf, generateClassGroupPdf } from "../services/pdfGenerator"
 
 const classGroupsStore = useClassGroupsStore()
@@ -141,7 +142,7 @@ function handleDownloadPdf(classGroup: ClassGroup): void {
             </td>
             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ roomName(cg.roomId) }}</td>
             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
-              {{ cg.startDate }} — {{ cg.computedEndDate ?? "?" }}
+              {{ formatDateBr(cg.startDate) }} — {{ cg.computedEndDate ? formatDateBr(cg.computedEndDate) : "?" }}
             </td>
             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ timeSlotLabel(cg.timeSlot) }}</td>
             <td class="px-4 py-3">
