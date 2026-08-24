@@ -4,8 +4,10 @@ import type { ClassGroup } from "../types"
 import { LOCAL_STORAGE_KEYS, persistToLocalStorage, readFromLocalStorage } from "../composables/useLocalStorage"
 import { calculateSchedule } from "../services/calendarEngine"
 import { findCapacityConflict, findScheduleConflict, type CapacityConflict, type ScheduleConflict } from "../services/conflictChecker"
+import { computeRescheduleDraft } from "../services/rescheduler"
 import { useHolidaysStore } from "./holidays"
 import { useRoomsStore } from "./rooms"
+import { useCoursesStore } from "./courses"
 import { mergeHolidayDates } from "../services/holidayEngine"
 
 function generateId(): string {
@@ -109,6 +111,98 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
     return { ok: true, classGroup }
   }
 
+  /**
+   * Resultado de uma tentativa de reagendar (arrastar) uma turma no calendário.
+   * `requiresAdvanceConfirmation: true` significa que nada foi salvo ainda —
+   * a UI deve confirmar com o usuário a antecipação do curso e chamar
+   * `reschedule` novamente com `confirmAdvance: true`.
+   */
+  interface RescheduleResult {
+    ok: boolean
+    classGroup?: ClassGroup
+    conflict?: ScheduleConflict
+    capacityConflict?: CapacityConflict
+    requiresAdvanceConfirmation?: boolean
+    proposedStartDate?: string
+  }
+
+  /**
+   * Reagenda (por arraste no calendário) a turma inteira, deslocando sua
+   * `startDate` pelo mesmo número de dias entre a aula arrastada e o dia
+   * onde foi solta, e recalculando toda a turma a partir da nova data.
+   *
+   * Se a nova data de início for anterior à `startDate` atual (o curso
+   * seria antecipado), NÃO salva e retorna `requiresAdvanceConfirmation`
+   * — a UI deve confirmar com o usuário e chamar de novo com
+   * `confirmAdvance: true` para efetivar. Conflito de horário (professor/
+   * espaço) ou de capacidade também bloqueia o salvamento, como no `save()`.
+   */
+  function reschedule(
+    id: string,
+    draggedFromDate: string,
+    draggedToDate: string,
+    confirmAdvance = false,
+  ): RescheduleResult {
+    const existing = classGroups.value.find((c) => c.id === id)
+    if (!existing) return { ok: false }
+
+    const draft = computeRescheduleDraft({
+      currentStartDate: existing.startDate,
+      draggedFromDate,
+      draggedToDate,
+    })
+
+    if (draft.deltaDays === 0) {
+      return { ok: true, classGroup: existing }
+    }
+
+    if (draft.requiresAdvanceConfirmation && !confirmAdvance) {
+      return { ok: false, requiresAdvanceConfirmation: true, proposedStartDate: draft.proposedStartDate }
+    }
+
+    const coursesStore = useCoursesStore()
+    const course = coursesStore.getById(existing.courseId)
+    if (!course) return { ok: false }
+
+    const nextDraft = { startDate: draft.proposedStartDate, dailyWorkloadHours: existing.dailyWorkloadHours, weekdays: existing.weekdays }
+    const schedule = computeSchedule(nextDraft, course)
+
+    const conflict = findScheduleConflict(
+      {
+        id: existing.id,
+        teacherId: existing.teacherId,
+        roomId: existing.roomId,
+        startDate: draft.proposedStartDate,
+        endDate: schedule.endDate,
+        weekdays: existing.weekdays,
+        timeSlot: existing.timeSlot,
+      },
+      classGroups.value,
+    )
+
+    if (conflict) {
+      return { ok: false, conflict }
+    }
+
+    if (existing.roomId) {
+      const roomsStore = useRoomsStore()
+      const capacityConflict = findCapacityConflict(existing.expectedStudents, roomsStore.getById(existing.roomId))
+      if (capacityConflict) {
+        return { ok: false, capacityConflict }
+      }
+    }
+
+    Object.assign(existing, {
+      startDate: draft.proposedStartDate,
+      computedEndDate: schedule.endDate,
+      computedMonthlyBreakdown: schedule.monthlyBreakdown,
+      computedClassDates: schedule.classDates,
+      updatedAt: new Date().toISOString(),
+    })
+
+    return { ok: true, classGroup: existing }
+  }
+
   function remove(id: string): void {
     classGroups.value = classGroups.value.filter((c) => c.id !== id)
   }
@@ -129,5 +223,5 @@ export const useClassGroupsStore = defineStore("classGroups", () => {
     classGroups.value = newClassGroups
   }
 
-  return { classGroups, computeSchedule, save, remove, getById, getByTeacherId, getByRoomId, replaceAll }
+  return { classGroups, computeSchedule, save, reschedule, remove, getById, getByTeacherId, getByRoomId, replaceAll }
 })

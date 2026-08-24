@@ -162,6 +162,7 @@ no calendário) não precisam de `dark:` — já funcionam em ambos os temas.
 | Bloqueio de choque de horário (mesmo professor OU mesmo espaço) | `src/services/conflictChecker.ts` (`findScheduleConflict`) — checa professor primeiro, depois espaço; retorna `ScheduleConflict.kind: "teacher" \| "room"`. Chamado dentro de `classGroups.ts` store no `save()`, que bloqueia e retorna o conflito em vez de salvar. `ConflictWarning.vue` exibe mensagem diferente conforme `kind` |
 | Bloqueio por capacidade de alunos excedida | `src/services/conflictChecker.ts` (`findCapacityConflict`) — compara `ClassGroup.expectedStudents` com `Room.capacity`; só roda se ambos os dois estiverem preenchidos. `classGroups.ts` store retorna `SaveClassGroupResult.capacityConflict` (independente de `conflict`); `CapacityWarning.vue` exibe a mensagem |
 | Cor do professor refletida no calendário | `Teacher.colorHex`, consumido em `ClassCalendarView.vue` via `:style` (Tailwind não gera classes para hex arbitrário em runtime) |
+| Arrastar e soltar (reagendar turma inteira no calendário) | `src/services/rescheduler.ts` (`computeRescheduleDraft` — cálculo puro do delta de dias e se antecipa o início) + `classGroups.ts` store (`reschedule`, que reaproveita `computeSchedule`/`findScheduleConflict`/`findCapacityConflict` do `save()`). Como uma turma não tem "aulas individuais" no modelo de dados — tudo é derivado de `startDate` pelo `calendarEngine` — arrastar QUALQUER aula desloca a `startDate` inteira pelo mesmo delta de dias, recalculando toda a turma. Disponível só nas visões Semana e Mês de `ClassCalendarView.vue` (grade de dias). Se o resultado antecipa a turma em relação à `startDate` atual, nada é salvo e a store retorna `requiresAdvanceConfirmation` — a view mostra `RescheduleConfirmModal.vue` pedindo confirmação antes de chamar `reschedule` de novo com `confirmAdvance: true`. Se o novo posicionamento gerar conflito de professor/espaço ou capacidade excedida, também não salva — a turma volta visualmente à posição original e `RescheduleConflictModal.vue` reaproveita `ConflictWarning`/`CapacityWarning` para exibir o motivo |
 | Visões de calendário (dia/semana/mês/semestre/ano) | `ClassCalendarView.vue` — um único componente com `viewMode` local; semestre/ano mostram mini-meses clicáveis que abrem a visão de mês |
 | Limpar todos os dados salvos / forçar atualização do app | `src/components/shared/AppMaintenanceControls.vue`, fixo na sidebar (`App.vue`). "Limpar dados" exige dupla confirmação e usa `clearAllLocalStorage` de `useLocalStorage.ts`. "Buscar atualizações" limpa Cache API/Service Worker (se existirem) e recarrega com um query param de cache-busting — não apaga dados |
 | Manual do usuário para download público em PDF | Botão "Baixar manual (PDF)" fixo na sidebar (`App.vue`) → `generateUserManualPdf` em `src/services/pdfGenerator.ts`, que lê o conteúdo de `src/content/userManual.ts`. Não depende de nenhum dado cadastrado — funciona mesmo com o sistema "vazio" |
@@ -192,6 +193,7 @@ Casos já cobertos (não remover sem substituir por algo equivalente):
 - `holidayEngine.spec.ts`: Páscoa em anos conhecidos, feriados fixos, feriados móveis derivados, merge com customizados.
 - `conflictChecker.spec.ts`: sobreposição de horário/dia, sem sobreposição de dia, horários adjacentes sem overlap, vigências não cruzadas, professores diferentes, turmas canceladas ignoradas, edição da própria turma, conflito de sala entre professores diferentes, sem conflito de sala quando os espaços diferem, sem conflito quando nenhuma turma tem espaço definido, prioridade professor > sala quando ambos colidem, capacidade excedida/igual/menor/sem espaço/sem nº de alunos.
 - `backup.spec.ts`: export contém todas as entidades (incluindo rooms), roundtrip export→import, rejeição de JSON malformado/incompleto/versão futura, aceitação de backup legado sem a chave "rooms" (preenche com lista vazia).
+- `rescheduler.spec.ts`: diferença de dias entre datas (positiva/negativa/zero/virada de mês), deslocamento de data ISO para frente/trás, adiar turma (sem confirmação), arrastar aula do meio da turma (desloca a startDate pelo mesmo delta), antecipar para antes do início definido (exige confirmação), soltar no mesmo dia (delta zero).
 
 ## Persistência (localStorage)
 
@@ -210,21 +212,21 @@ repositório no GitHub mudar, esse valor precisa mudar junto.
 ## Status do projeto
 
 **MVP completo e funcional**, com módulo de espaços físicos, identidade visual institucional
-sutil e tema claro/escuro/sistema (13/08/2026). Todas as telas, serviços e testes descritos neste
-documento existem e passam:
+sutil, tema claro/escuro/sistema e reagendamento de turma por arrastar-e-soltar no calendário
+(23/08/2026). Todas as telas, serviços e testes descritos neste documento existem e passam:
 
 - `npx vue-tsc -b --noEmit` — sem erros de tipo
-- `npx vitest run` — 33 testes, 4 arquivos, todos passando
+- `npx vitest run` — 43 testes, 5 arquivos, todos passando
 - `npm run build` — build de produção OK
 
 Implementado:
 - `src/types/index.ts` (inclui `Room`), `src/constants/schedule.ts`
-- `src/services/{calendarEngine,holidayEngine,conflictChecker,backup,pdfGenerator}.ts` + testes dos 4 primeiros
-- `src/stores/{teachers,courses,holidays,classGroups,rooms}.ts` (Pinia, persistência automática em localStorage)
+- `src/services/{calendarEngine,holidayEngine,conflictChecker,backup,pdfGenerator,rescheduler}.ts` + testes de todos exceto `pdfGenerator`
+- `src/stores/{teachers,courses,holidays,classGroups,rooms}.ts` (Pinia, persistência automática em localStorage; `classGroups.reschedule` cobre o drag-and-drop)
 - `src/composables/useLocalStorage.ts`
 - `src/components/forms/{TeacherForm,CourseForm,HolidayForm,ClassGroupForm,RoomForm}.vue`
-- `src/components/calendar/{MonthlyBreakdown,ClassCalendarView}.vue`
-- `src/components/shared/{ConflictWarning,CapacityWarning,BackupControls,AppMaintenanceControls}.vue`
+- `src/components/calendar/{MonthlyBreakdown,ClassCalendarView}.vue` (Semana/Mês suportam arrastar uma aula para reagendar a turma inteira)
+- `src/components/shared/{ConflictWarning,CapacityWarning,BackupControls,AppMaintenanceControls,RescheduleConfirmModal,RescheduleConflictModal}.vue`
 - `src/views/{DashboardView,CoursesView,ClassGroupsView,TeachersView,HolidaysView,RoomsView}.vue`
 - Botões de "Baixar PDF" funcionais em Turmas (PDF da turma, com espaço/capacidade quando preenchidos) e Professores (PDF do professor)
 - Bloqueio de conflito de sala e de capacidade excedida integrados ao fluxo de salvar turma

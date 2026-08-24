@@ -4,6 +4,9 @@ import { useClassGroupsStore } from "../../stores/classGroups"
 import { useTeachersStore } from "../../stores/teachers"
 import { useRoomsStore } from "../../stores/rooms"
 import { timeSlotLabel } from "../../constants/schedule"
+import type { ScheduleConflict, CapacityConflict } from "../../services/conflictChecker"
+import RescheduleConfirmModal from "../shared/RescheduleConfirmModal.vue"
+import RescheduleConflictModal from "../shared/RescheduleConflictModal.vue"
 
 const classGroupsStore = useClassGroupsStore()
 const teachersStore = useTeachersStore()
@@ -84,6 +87,78 @@ const eventsByDate = computed(() => {
 
 function eventsFor(iso: string) {
   return eventsByDate.value.get(iso) ?? []
+}
+
+// ---------- Arrastar e soltar: reagendar turma inteira (só nas visões Semana e Mês) ----------
+
+interface DragPayload {
+  classGroupId: string
+  /** Data original (ISO) da aula que o usuário pegou para arrastar. */
+  fromDate: string
+}
+
+const draggingEvent = ref<DragPayload | null>(null)
+const dragOverIso = ref<string | null>(null)
+
+/** Aguardando confirmação de antecipação de curso (modal). */
+const pendingAdvanceConfirmation = ref<{ classGroupId: string; fromDate: string; toDate: string; proposedStartDate: string } | null>(null)
+/** Conflito detectado ao tentar aplicar o reagendamento (modal). */
+const rescheduleConflict = ref<{ conflict?: ScheduleConflict; capacityConflict?: CapacityConflict } | null>(null)
+
+function onEventDragStart(classGroupId: string, fromDate: string): void {
+  draggingEvent.value = { classGroupId, fromDate }
+}
+
+function onEventDragEnd(): void {
+  draggingEvent.value = null
+  dragOverIso.value = null
+}
+
+function onCellDragOver(iso: string): void {
+  if (!draggingEvent.value) return
+  dragOverIso.value = iso
+}
+
+function onCellDrop(toDate: string): void {
+  const dragged = draggingEvent.value
+  draggingEvent.value = null
+  dragOverIso.value = null
+  if (!dragged) return
+  if (dragged.fromDate === toDate) return
+
+  applyReschedule(dragged.classGroupId, dragged.fromDate, toDate, false)
+}
+
+function applyReschedule(classGroupId: string, fromDate: string, toDate: string, confirmAdvance: boolean): void {
+  const result = classGroupsStore.reschedule(classGroupId, fromDate, toDate, confirmAdvance)
+
+  if (result.ok) {
+    pendingAdvanceConfirmation.value = null
+    return
+  }
+
+  if (result.requiresAdvanceConfirmation && result.proposedStartDate) {
+    pendingAdvanceConfirmation.value = { classGroupId, fromDate, toDate, proposedStartDate: result.proposedStartDate }
+    return
+  }
+
+  if (result.conflict || result.capacityConflict) {
+    rescheduleConflict.value = { conflict: result.conflict, capacityConflict: result.capacityConflict }
+  }
+}
+
+function confirmAdvanceReschedule(): void {
+  const pending = pendingAdvanceConfirmation.value
+  if (!pending) return
+  applyReschedule(pending.classGroupId, pending.fromDate, pending.toDate, true)
+}
+
+function cancelAdvanceReschedule(): void {
+  pendingAdvanceConfirmation.value = null
+}
+
+function closeRescheduleConflict(): void {
+  rescheduleConflict.value = null
 }
 
 // ---------- Navegação: avança/volta um "passo" de acordo com a visão ativa ----------
@@ -294,15 +369,25 @@ const periodLabel = computed(() => {
         <div v-for="wd in WEEKDAY_HEADER" :key="wd" class="bg-slate-50 px-2 py-1.5 text-center font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           {{ wd }}
         </div>
-        <div v-for="cell in weekCells" :key="cell.iso" class="min-h-[110px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[140px]">
+        <div
+          v-for="cell in weekCells"
+          :key="cell.iso"
+          class="min-h-[110px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[140px]"
+          :class="{ 'bg-blue-50 dark:bg-blue-900/20': dragOverIso === cell.iso }"
+          @dragover.prevent="onCellDragOver(cell.iso)"
+          @drop.prevent="onCellDrop(cell.iso)"
+        >
           <div class="mb-1 text-right text-[11px] text-slate-500 dark:text-slate-400">{{ cell.day }}</div>
           <div class="flex flex-col gap-1">
             <div
               v-for="event in eventsFor(cell.iso)"
               :key="event.classGroupId"
-              class="rounded px-1.5 py-1 text-[11px] font-medium text-white"
+              draggable="true"
+              class="cursor-grab rounded px-1.5 py-1 text-[11px] font-medium text-white active:cursor-grabbing"
               :style="{ backgroundColor: event.colorHex }"
               :title="event.roomName ? `${event.name} — ${event.teacherName} — ${event.roomName}` : `${event.name} — ${event.teacherName}`"
+              @dragstart="onEventDragStart(event.classGroupId, cell.iso)"
+              @dragend="onEventDragEnd"
             >
               <div class="truncate">{{ event.name }}</div>
               <div class="truncate opacity-90">{{ event.timeSlotText }}</div>
@@ -322,7 +407,12 @@ const periodLabel = computed(() => {
           v-for="cell in monthCells"
           :key="cell.iso"
           class="min-h-[68px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[92px]"
-          :class="{ 'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500': !cell.inCurrentMonth }"
+          :class="{
+            'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500': !cell.inCurrentMonth,
+            'bg-blue-50 dark:bg-blue-900/20': dragOverIso === cell.iso,
+          }"
+          @dragover.prevent="onCellDragOver(cell.iso)"
+          @drop.prevent="onCellDrop(cell.iso)"
         >
           <div class="mb-1 text-right text-[11px]" :class="cell.inCurrentMonth ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600'">
             {{ cell.day }}
@@ -331,9 +421,12 @@ const periodLabel = computed(() => {
             <div
               v-for="event in eventsFor(cell.iso)"
               :key="event.classGroupId"
-              class="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+              draggable="true"
+              class="cursor-grab truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white active:cursor-grabbing"
               :style="{ backgroundColor: event.colorHex }"
               :title="event.roomName ? `${event.name} — ${event.teacherName} — ${event.roomName}` : `${event.name} — ${event.teacherName}`"
+              @dragstart="onEventDragStart(event.classGroupId, cell.iso)"
+              @dragend="onEventDragEnd"
             >
               {{ event.name }}
             </div>
@@ -369,5 +462,19 @@ const periodLabel = computed(() => {
         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ m.eventCount }} aula(s)</p>
       </button>
     </div>
+
+    <RescheduleConfirmModal
+      v-if="pendingAdvanceConfirmation"
+      :new-start-date="pendingAdvanceConfirmation.proposedStartDate"
+      @confirm="confirmAdvanceReschedule"
+      @cancel="cancelAdvanceReschedule"
+    />
+
+    <RescheduleConflictModal
+      v-if="rescheduleConflict"
+      :conflict="rescheduleConflict.conflict"
+      :capacity-conflict="rescheduleConflict.capacityConflict"
+      @close="closeRescheduleConflict"
+    />
   </div>
 </template>

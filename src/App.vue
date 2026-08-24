@@ -16,6 +16,8 @@ const navItems = [
 ]
 
 const generatingManual = ref(false)
+/** Ano exibido no rodapé, sempre o ano corrente. */
+const currentYear = new Date().getFullYear()
 /** Controla a sidebar em telas pequenas (fica sempre visível a partir do breakpoint lg). */
 const sidebarOpen = ref(false)
 const route = useRoute()
@@ -141,7 +143,7 @@ const logoUrl = `${import.meta.env.BASE_URL}senac-logo.png`
         <footer
           class="border-t border-slate-200 bg-white px-4 py-4 text-center text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 sm:px-6"
         >
-          Todos os direitos reservados — {{ INSTITUTIONAL_CREDITS.organization }}<br />
+          {{ currentYear }} - Todos os direitos reservados<br />
           Desenvolvido por: {{ INSTITUTIONAL_CREDITS.developedBy }} —
           <a
             :href="`mailto:${INSTITUTIONAL_CREDITS.contactEmail}`"
