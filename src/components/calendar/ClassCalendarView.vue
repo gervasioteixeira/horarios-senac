@@ -3,15 +3,17 @@ import { computed, ref } from "vue"
 import { useClassGroupsStore } from "../../stores/classGroups"
 import { useTeachersStore } from "../../stores/teachers"
 import { useRoomsStore } from "../../stores/rooms"
+import { useCoursesStore } from "../../stores/courses"
 import { timeSlotLabel } from "../../constants/schedule"
 import type { ScheduleConflict, CapacityConflict } from "../../services/conflictChecker"
+import RescheduleActionModal from "../shared/RescheduleActionModal.vue"
 import RescheduleConfirmModal from "../shared/RescheduleConfirmModal.vue"
 import RescheduleConflictModal from "../shared/RescheduleConflictModal.vue"
-import RescheduleModeModal from "../shared/RescheduleModeModal.vue"
 
 const classGroupsStore = useClassGroupsStore()
 const teachersStore = useTeachersStore()
 const roomsStore = useRoomsStore()
+const coursesStore = useCoursesStore()
 
 type ViewMode = "day" | "week" | "month" | "semester" | "year"
 
@@ -63,12 +65,13 @@ function addMonths(date: Date, amount: number): Date {
 const eventsByDate = computed(() => {
   const map = new Map<
     string,
-    Array<{ classGroupId: string; name: string; colorHex: string; teacherName: string; timeSlotText: string; roomName: string | null }>
+    Array<{ classGroupId: string; name: string; colorHex: string; courseName: string; teacherName: string; timeSlotText: string; roomName: string | null }>
   >()
   for (const cg of classGroupsStore.classGroups) {
     if (cg.status === "cancelled") continue
     const teacher = teachersStore.getById(cg.teacherId)
     const colorHex = teacher?.colorHex ?? "#64748b"
+    const courseName = coursesStore.getById(cg.courseId)?.name ?? "Curso removido"
     const roomName = cg.roomId ? (roomsStore.getById(cg.roomId)?.name ?? "Espaço removido") : null
     for (const date of cg.computedClassDates) {
       const list = map.get(date) ?? []
@@ -76,6 +79,7 @@ const eventsByDate = computed(() => {
         classGroupId: cg.id,
         name: cg.name,
         colorHex,
+        courseName,
         teacherName: teacher?.name ?? "Professor removido",
         timeSlotText: timeSlotLabel(cg.timeSlot),
         roomName,
@@ -90,63 +94,60 @@ function eventsFor(iso: string) {
   return eventsByDate.value.get(iso) ?? []
 }
 
-// ---------- Arrastar e soltar: reagendar turma inteira (só nas visões Semana e Mês) ----------
+/** Texto do tooltip nativo (title) ao passar o mouse sobre uma aula no calendário. */
+function eventTooltip(event: { name: string; courseName: string; teacherName: string; roomName: string | null }): string {
+  const lines = [event.name, event.courseName, event.teacherName]
+  if (event.roomName) lines.push(event.roomName)
+  return lines.join("\n")
+}
 
-interface DragPayload {
+// ---------- Reagendar aula: tocar/clicar numa aula (só nas visões Semana e Mês) ----------
+// Usa toque/clique + seletor de data em vez de arrastar-e-soltar (HTML5 Drag and Drop
+// não funciona em touchscreens) para que a funcionalidade seja operável no celular/tablet.
+
+interface ActionTarget {
   classGroupId: string
-  /** Data original (ISO) da aula que o usuário pegou para arrastar. */
+  eventName: string
+  courseName: string
+  /** Data original (ISO) da aula tocada. */
   fromDate: string
 }
 
-const draggingEvent = ref<DragPayload | null>(null)
-const dragOverIso = ref<string | null>(null)
-
-/** Escolha pendente do usuário (turma inteira x só a partir desta aula), logo após soltar. */
-const pendingModeChoice = ref<{ classGroupId: string; fromDate: string; toDate: string } | null>(null)
+/** Aula tocada, aguardando o usuário escolher modo + nova data no RescheduleActionModal. */
+const actionTarget = ref<ActionTarget | null>(null)
 /** Aguardando confirmação de antecipação de curso (modal) — só se aplica ao modo "turma inteira". */
 const pendingAdvanceConfirmation = ref<{ classGroupId: string; fromDate: string; toDate: string; proposedStartDate: string } | null>(null)
 /** Conflito detectado ao tentar aplicar o reagendamento (modal). */
 const rescheduleConflict = ref<{ conflict?: ScheduleConflict; capacityConflict?: CapacityConflict } | null>(null)
-/** Aviso simples de arraste inválido (ex: adiamento pontual solto numa data não posterior). */
+/** Aviso simples de ação inválida (ex: adiamento pontual escolhido para uma data não posterior). */
 const rescheduleWarning = ref<string | null>(null)
 
-function onEventDragStart(classGroupId: string, fromDate: string): void {
-  draggingEvent.value = { classGroupId, fromDate }
+function onEventTap(event: { classGroupId: string; name: string; courseName: string }, fromDate: string): void {
+  actionTarget.value = { classGroupId: event.classGroupId, eventName: event.name, courseName: event.courseName, fromDate }
 }
 
-function onEventDragEnd(): void {
-  draggingEvent.value = null
-  dragOverIso.value = null
+function cancelActionTarget(): void {
+  actionTarget.value = null
 }
 
-function onCellDragOver(iso: string): void {
-  if (!draggingEvent.value) return
-  dragOverIso.value = iso
+function handleMoveWhole(toDate: string): void {
+  const target = actionTarget.value
+  actionTarget.value = null
+  if (!target || target.fromDate === toDate) return
+  applyReschedule(target.classGroupId, target.fromDate, toDate, false)
 }
 
-function onCellDrop(toDate: string): void {
-  const dragged = draggingEvent.value
-  draggingEvent.value = null
-  dragOverIso.value = null
-  if (!dragged) return
-  if (dragged.fromDate === toDate) return
+function handlePostponeFromHere(toDate: string): void {
+  const target = actionTarget.value
+  actionTarget.value = null
+  if (!target) return
 
-  pendingModeChoice.value = { classGroupId: dragged.classGroupId, fromDate: dragged.fromDate, toDate }
-}
+  if (target.fromDate === toDate) {
+    rescheduleWarning.value = "Escolha uma data diferente da atual para reagendar a aula."
+    return
+  }
 
-function chooseMoveWholeClassGroup(): void {
-  const pending = pendingModeChoice.value
-  pendingModeChoice.value = null
-  if (!pending) return
-  applyReschedule(pending.classGroupId, pending.fromDate, pending.toDate, false)
-}
-
-function choosePostponeFromHere(): void {
-  const pending = pendingModeChoice.value
-  pendingModeChoice.value = null
-  if (!pending) return
-
-  const result = classGroupsStore.postpone(pending.classGroupId, pending.fromDate, pending.toDate)
+  const result = classGroupsStore.postpone(target.classGroupId, target.fromDate, toDate)
 
   if (result.ok) return
 
@@ -157,10 +158,6 @@ function choosePostponeFromHere(): void {
 
   rescheduleWarning.value =
     "Só é possível adiar uma aula para uma data POSTERIOR à original — para antecipar, use a opção \"Mover a turma inteira\"."
-}
-
-function cancelModeChoice(): void {
-  pendingModeChoice.value = null
 }
 
 function applyReschedule(classGroupId: string, fromDate: string, toDate: string, confirmAdvance: boolean): void {
@@ -393,6 +390,7 @@ const periodLabel = computed(() => {
           <span class="h-3 w-3 shrink-0 rounded-full border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: event.colorHex }" />
           <div>
             <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ event.name }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ event.courseName }}</p>
             <p class="text-xs text-slate-500 dark:text-slate-400">
               {{ event.teacherName }} · {{ event.timeSlotText }}<template v-if="event.roomName"> · {{ event.roomName }}</template>
             </p>
@@ -411,25 +409,21 @@ const periodLabel = computed(() => {
           v-for="cell in weekCells"
           :key="cell.iso"
           class="min-h-[110px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[140px]"
-          :class="{ 'bg-blue-50 dark:bg-blue-900/20': dragOverIso === cell.iso }"
-          @dragover.prevent="onCellDragOver(cell.iso)"
-          @drop.prevent="onCellDrop(cell.iso)"
         >
           <div class="mb-1 text-right text-[11px] text-slate-500 dark:text-slate-400">{{ cell.day }}</div>
           <div class="flex flex-col gap-1">
-            <div
+            <button
               v-for="event in eventsFor(cell.iso)"
               :key="event.classGroupId"
-              draggable="true"
-              class="cursor-grab rounded px-1.5 py-1 text-[11px] font-medium text-white active:cursor-grabbing"
+              type="button"
+              class="rounded px-1.5 py-1 text-left text-[11px] font-medium text-white"
               :style="{ backgroundColor: event.colorHex }"
-              :title="event.roomName ? `${event.name} — ${event.teacherName} — ${event.roomName}` : `${event.name} — ${event.teacherName}`"
-              @dragstart="onEventDragStart(event.classGroupId, cell.iso)"
-              @dragend="onEventDragEnd"
+              :title="eventTooltip(event)"
+              @click="onEventTap(event, cell.iso)"
             >
               <div class="truncate">{{ event.name }}</div>
               <div class="truncate opacity-90">{{ event.timeSlotText }}</div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -445,29 +439,23 @@ const periodLabel = computed(() => {
           v-for="cell in monthCells"
           :key="cell.iso"
           class="min-h-[68px] bg-white p-1.5 dark:bg-slate-800 sm:min-h-[92px]"
-          :class="{
-            'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500': !cell.inCurrentMonth,
-            'bg-blue-50 dark:bg-blue-900/20': dragOverIso === cell.iso,
-          }"
-          @dragover.prevent="onCellDragOver(cell.iso)"
-          @drop.prevent="onCellDrop(cell.iso)"
+          :class="{ 'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500': !cell.inCurrentMonth }"
         >
           <div class="mb-1 text-right text-[11px]" :class="cell.inCurrentMonth ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600'">
             {{ cell.day }}
           </div>
           <div class="flex flex-col gap-1">
-            <div
+            <button
               v-for="event in eventsFor(cell.iso)"
               :key="event.classGroupId"
-              draggable="true"
-              class="cursor-grab truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white active:cursor-grabbing"
+              type="button"
+              class="truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white"
               :style="{ backgroundColor: event.colorHex }"
-              :title="event.roomName ? `${event.name} — ${event.teacherName} — ${event.roomName}` : `${event.name} — ${event.teacherName}`"
-              @dragstart="onEventDragStart(event.classGroupId, cell.iso)"
-              @dragend="onEventDragEnd"
+              :title="eventTooltip(event)"
+              @click="onEventTap(event, cell.iso)"
             >
               {{ event.name }}
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -501,11 +489,14 @@ const periodLabel = computed(() => {
       </button>
     </div>
 
-    <RescheduleModeModal
-      v-if="pendingModeChoice"
-      @move-whole="chooseMoveWholeClassGroup"
-      @postpone-from-here="choosePostponeFromHere"
-      @cancel="cancelModeChoice"
+    <RescheduleActionModal
+      v-if="actionTarget"
+      :event-name="actionTarget.eventName"
+      :course-name="actionTarget.courseName"
+      :current-date="actionTarget.fromDate"
+      @move-whole="handleMoveWhole"
+      @postpone-from-here="handlePostponeFromHere"
+      @cancel="cancelActionTarget"
     />
 
     <RescheduleConfirmModal
@@ -527,7 +518,7 @@ const periodLabel = computed(() => {
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       @click.self="closeRescheduleWarning"
     >
-      <div class="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-slate-800">
+      <div class="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-5 shadow-lg dark:bg-slate-800">
         <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Não foi possível adiar a aula</h3>
         <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ rescheduleWarning }}</p>
         <div class="mt-4 flex justify-end">

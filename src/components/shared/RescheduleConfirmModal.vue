@@ -17,7 +17,7 @@ function formatDate(iso: string): string {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div class="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-slate-800">
+    <div class="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-white p-5 shadow-lg dark:bg-slate-800">
       <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Antecipar início da turma?</h3>
       <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
         A data de início atualmente definida é posterior ao dia para onde a aula foi arrastada.
