@@ -5,6 +5,7 @@ import BackupControls from "./components/shared/BackupControls.vue"
 import AppMaintenanceControls from "./components/shared/AppMaintenanceControls.vue"
 import ThemeToggle from "./components/shared/ThemeToggle.vue"
 import { downloadPdf, generateUserManualPdf, INSTITUTIONAL_CREDITS } from "./services/pdfGenerator"
+import { APP_BUILD, formatVersionDetails, formatVersionLabel } from "./constants/version"
 
 const navItems = [
   { to: "/", label: "Painel" },
@@ -16,6 +17,8 @@ const navItems = [
 ]
 
 const generatingManual = ref(false)
+const versionLabel = formatVersionLabel(APP_BUILD)
+const versionDetails = formatVersionDetails(APP_BUILD)
 /** Ano exibido no rodapé, sempre o ano corrente. */
 const currentYear = new Date().getFullYear()
 /** Controla a sidebar em telas pequenas (fica sempre visível a partir do breakpoint lg). */
@@ -151,6 +154,10 @@ const logoUrl = `${import.meta.env.BASE_URL}senac-logo.png`
           >
             {{ INSTITUTIONAL_CREDITS.contactEmail }}
           </a>
+          <br />
+          <span class="mt-1 inline-block cursor-default text-[11px] tabular-nums text-slate-400/80 dark:text-slate-500/80" :title="versionDetails">
+            {{ versionLabel }}
+          </span>
         </footer>
       </div>
     </div>
