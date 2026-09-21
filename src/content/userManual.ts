@@ -82,6 +82,11 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
       p("Se precisar de mais anos à frente, a tela de Feriados tem um botão para gerar os feriados nacionais de um ano específico."),
       p("Para feriados estaduais, municipais ou pontos facultativos (que variam por cidade/estado):"),
       ol(["Vá em Feriados.", "Clique em Novo feriado.", "Preencha a data, o nome e o tipo (estadual/municipal/outro).", "Clique em Salvar."]),
+      p(
+        "Recesso escolar: para um período em que não há teoria (ex: recesso de julho ou de fim de ano), " +
+          "escolha o tipo \"Recesso escolar (período)\" e informe o primeiro e o último dia. O recesso só afeta " +
+          "cursos de Aprendizagem: durante o período, a semana toda (segunda a sexta) vira prática. Cursos comuns o ignoram.",
+      ),
     ],
   },
   {
@@ -96,6 +101,18 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
       p(
         "Um curso é como um \"modelo\": o mesmo curso pode dar origem a várias turmas diferentes ao longo " +
           "do tempo (ex: \"Excel Básico\" pode ter uma turma em janeiro de manhã e outra em março à noite).",
+      ),
+      p(
+        "Unidades Curriculares (UCs): se o curso é dividido em UCs, cadastre-as no próprio formulário do curso. " +
+          "Clique em Adicionar UC (nome, carga horária e tipo Teoria ou Prática) ou em Importar do Word (.docx) " +
+          "para carregar a lista de UCs de um documento com a tabela \"UC / Unidade Curricular / CH\". " +
+          "Use as setas para ordenar as UCs. Com UCs cadastradas, a carga horária total do curso passa a ser " +
+          "a soma delas, e cada turma mostra a data de início e de término de cada UC.",
+      ),
+      p(
+        "Curso de Aprendizagem Profissional: marque essa opção quando o curso tiver teoria (no SENAC) e prática " +
+          "(na empresa) correndo em paralelo. É preciso ter pelo menos uma UC de Teoria e uma de Prática. " +
+          "Ao importar o documento de uma Aprendizagem, o sistema já marca essa opção.",
       ),
     ],
   },
@@ -126,9 +143,21 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
         "Informe a carga horária diária (ex: 4h).",
         "Marque os dias da semana em que a turma terá aula (segunda a sábado).",
         "Escolha o horário entre as opções fixas disponíveis (manhã, tarde ou noite).",
-        "Confira a data de término e a distribuição mensal calculadas automaticamente.",
+        "Confira a previsão de encerramento e a distribuição mensal calculadas automaticamente (e, se o curso tem UCs, as datas de cada UC).",
         "Clique em Salvar.",
       ]),
+      p(
+        "Previsão de encerramento: a data aparece na lista de turmas. Se uma aula for adiada pelo calendário " +
+          "(por exemplo, o professor faltou), a previsão é recalculada e a lista mostra \"Adiada em N dia(s)\" " +
+          "junto com a previsão original. Editar a turma pelo formulário ou mover a turma inteira define uma nova previsão de referência.",
+      ),
+      p(
+        "Turmas de Aprendizagem: os dias da semana marcados são os dias de teoria (no SENAC), e os demais dias úteis " +
+          "(segunda a sexta) são de prática (na empresa). Informe também a carga horária diária da prática. " +
+          "A turma sempre começa com 10 dias úteis seguidos só de teoria; depois, os dias de teoria da turma são teoria e os " +
+          "demais são prática. Em recesso, ou quando a carga da teoria termina, a semana toda vira prática; quando a prática " +
+          "termina, a semana toda vira teoria. A prática acontece na empresa, então não gera conflito de professor nem de espaço.",
+      ),
       p(
         "O sistema verifica dois tipos de conflito antes de salvar: mesmo professor em duas turmas no " +
           "mesmo horário, ou mesmo espaço ocupado por duas turmas no mesmo horário. Em qualquer um dos " +
@@ -145,7 +174,8 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
     blocks: [
       p(
         "A tela de Turmas mostra um calendário com todas as aulas, cada uma destacada com a cor do " +
-          "professor responsável. É possível alternar entre as visões de Dia, Semana, Mês, Semestre e Ano.",
+          "professor responsável. É possível alternar entre as visões de Dia, Semana, Mês, Semestre e Ano. " +
+          "Nas turmas de Aprendizagem, os dias de prática (na empresa) aparecem com borda tracejada.",
       ),
     ],
   },
@@ -153,7 +183,7 @@ export const USER_MANUAL_SECTIONS: ManualSection[] = [
     heading: "7. Gerar PDF",
     blocks: [
       ul([
-        "PDF da turma: na lista de turmas, clique em Baixar PDF ao lado da turma desejada — traz os dados da turma (incluindo espaço e alunos previstos, quando preenchidos), o calendário completo de aulas e o resumo de horas por mês.",
+        "PDF da turma: na lista de turmas, clique em Baixar PDF ao lado da turma desejada — traz os dados da turma (incluindo espaço e alunos previstos, quando preenchidos), a previsão de encerramento (e o atraso, se houve adiamento), as datas de cada UC, o calendário completo de aulas e o resumo de horas por mês.",
         "PDF do professor: na lista de professores, clique em Baixar PDF ao lado do nome — traz os dados do professor e a agenda consolidada de todas as turmas dele.",
       ]),
     ],

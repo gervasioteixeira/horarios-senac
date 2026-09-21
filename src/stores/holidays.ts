@@ -3,6 +3,7 @@ import { computed, ref } from "vue"
 import type { Holiday } from "../types"
 import { LOCAL_STORAGE_KEYS, persistToLocalStorage, readFromLocalStorage } from "../composables/useLocalStorage"
 import { generateNationalHolidaysForYearRange } from "../services/holidayEngine"
+import type { RecessRange } from "../services/apprenticeshipEngine"
 
 function generateId(): string {
   return `holiday-${crypto.randomUUID()}`
@@ -26,7 +27,13 @@ export const useHolidaysStore = defineStore("holidays", () => {
   persistToLocalStorage(LOCAL_STORAGE_KEYS.holidays, holidays)
 
   const nationalHolidays = computed(() => holidays.value.filter((h) => h.scope === "national"))
-  const customHolidays = computed(() => holidays.value.filter((h) => h.scope !== "national"))
+  /** Feriados de um dia só cadastrados manualmente (estaduais/municipais/outros). Exclui recessos. */
+  const customHolidays = computed(() => holidays.value.filter((h) => h.scope !== "national" && h.scope !== "recess"))
+  /** Recessos escolares (períodos). Só afetam cursos de Aprendizagem — ver apprenticeshipEngine.ts. */
+  const recesses = computed(() => holidays.value.filter((h) => h.scope === "recess"))
+  const recessRanges = computed<RecessRange[]>(() =>
+    recesses.value.filter((h) => h.endDate).map((h) => ({ startDate: h.date, endDate: h.endDate! })),
+  )
 
   /** Garante que os feriados nacionais de um dado ano estejam presentes (idempotente). */
   function ensureNationalHolidaysForYear(year: number): void {
@@ -53,6 +60,8 @@ export const useHolidaysStore = defineStore("holidays", () => {
     holidays,
     nationalHolidays,
     customHolidays,
+    recesses,
+    recessRanges,
     ensureNationalHolidaysForYear,
     create,
     remove,

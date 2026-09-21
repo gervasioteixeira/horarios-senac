@@ -34,12 +34,12 @@ export interface CalculateScheduleResult {
 /** Limite de segurança para evitar loop infinito caso os parâmetros sejam inválidos (ex: weekdays vazio). */
 const MAX_ITERATIONS = 20000
 
-function parseIsoDate(iso: string): Date {
+export function parseIsoDate(iso: string): Date {
   const [year, month, day] = iso.split("-").map(Number)
   return new Date(Date.UTC(year, month - 1, day))
 }
 
-function formatIsoDate(date: Date): string {
+export function formatIsoDate(date: Date): string {
   const year = date.getUTCFullYear()
   const month = String(date.getUTCMonth() + 1).padStart(2, "0")
   const day = String(date.getUTCDate()).padStart(2, "0")

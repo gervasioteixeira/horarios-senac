@@ -8,9 +8,14 @@ import { useClassGroupsStore, type ClassGroupDraft } from "../../stores/classGro
 import type { CapacityConflict, ScheduleConflict } from "../../services/conflictChecker"
 import { ALLOWED_TIME_SLOTS, ALL_WEEKDAYS, WEEKDAY_LABELS, timeSlotLabel } from "../../constants/schedule"
 import { formatDateBr } from "../../constants/format"
+import { computeClassGroupUnitSchedule } from "../../services/unitSchedule"
 import MonthlyBreakdown from "../calendar/MonthlyBreakdown.vue"
+import UnitScheduleTable from "../calendar/UnitScheduleTable.vue"
 import ConflictWarning from "../shared/ConflictWarning.vue"
 import CapacityWarning from "../shared/CapacityWarning.vue"
+
+/** Carga diária de prática sugerida ao escolher um curso de Aprendizagem (ajustável no campo). */
+const DEFAULT_PRACTICE_DAILY_HOURS = 6
 
 const props = defineProps<{
   classGroup?: ClassGroup | null
@@ -35,6 +40,7 @@ function defaultState(): ClassGroupDraft {
     name: "",
     startDate: "",
     dailyWorkloadHours: 4,
+    practiceDailyHours: undefined,
     weekdays: [],
     timeSlot: { ...ALLOWED_TIME_SLOTS[0] },
     status: "planned",
@@ -56,6 +62,7 @@ function resetFromProp(): void {
     form.name = cg.name
     form.startDate = cg.startDate
     form.dailyWorkloadHours = cg.dailyWorkloadHours
+    form.practiceDailyHours = cg.practiceDailyHours
     form.weekdays = [...cg.weekdays]
     form.timeSlot = { ...cg.timeSlot }
     form.status = cg.status
@@ -88,6 +95,18 @@ function toggleWeekday(day: Weekday): void {
 
 const selectedCourse = computed(() => coursesStore.getById(form.courseId))
 
+/** Curso de Aprendizagem: teoria e prática em paralelo (ver services/apprenticeshipEngine.ts). */
+const isApprenticeship = computed(() => Boolean(selectedCourse.value?.isApprenticeship))
+
+// Ao escolher um curso de Aprendizagem, sugere a carga diária de prática; ao trocar para outro tipo, descarta.
+watch(isApprenticeship, (apprenticeship) => {
+  if (apprenticeship && !form.practiceDailyHours) form.practiceDailyHours = DEFAULT_PRACTICE_DAILY_HOURS
+  if (!apprenticeship) form.practiceDailyHours = undefined
+}, { immediate: true })
+
+/** Dias úteis que NÃO são de teoria: nas turmas de Aprendizagem, são os dias de prática (na empresa). */
+const practiceWeekdays = computed(() => ([1, 2, 3, 4, 5] as Weekday[]).filter((d) => !form.weekdays.includes(d)))
+
 /** Formulário preenchido o suficiente para calcular um preview de calendário. */
 const canPreview = computed(() => {
   return Boolean(
@@ -95,15 +114,36 @@ const canPreview = computed(() => {
       form.dailyWorkloadHours > 0 &&
       form.weekdays.length > 0 &&
       selectedCourse.value &&
-      selectedCourse.value.totalWorkloadHours > 0,
+      selectedCourse.value.totalWorkloadHours > 0 &&
+      (!isApprenticeship.value || form.practiceDailyHours! > 0),
   )
 })
 
 const preview = computed(() => {
   if (!canPreview.value || !selectedCourse.value) return null
   return classGroupsStore.computeSchedule(
-    { startDate: form.startDate, dailyWorkloadHours: form.dailyWorkloadHours, weekdays: form.weekdays },
-    { totalWorkloadHours: selectedCourse.value.totalWorkloadHours },
+    {
+      startDate: form.startDate,
+      dailyWorkloadHours: form.dailyWorkloadHours,
+      practiceDailyHours: form.practiceDailyHours,
+      weekdays: form.weekdays,
+    },
+    selectedCourse.value,
+  )
+})
+
+/** Datas de cada UC do curso na turma sendo montada (só se o curso tem UCs). */
+const unitSchedule = computed(() => {
+  const units = selectedCourse.value?.units
+  if (!preview.value || !units?.length) return []
+  return computeClassGroupUnitSchedule(
+    {
+      classDates: preview.value.classDates,
+      dailyWorkloadHours: form.dailyWorkloadHours,
+      practiceDates: preview.value.practiceDates,
+      practiceDailyHours: form.practiceDailyHours,
+    },
+    units,
   )
 })
 
@@ -118,6 +158,7 @@ watch(
     form.expectedStudents,
     form.startDate,
     form.dailyWorkloadHours,
+    form.practiceDailyHours,
     form.weekdays.join(","),
     form.timeSlot.start,
     form.timeSlot.end,
@@ -138,6 +179,7 @@ const canSubmit = computed(() => {
       form.name.trim() &&
       form.startDate &&
       form.dailyWorkloadHours > 0 &&
+      (!isApprenticeship.value || form.practiceDailyHours! > 0) &&
       form.weekdays.length > 0,
   )
 })
@@ -158,12 +200,13 @@ function handleSubmit(): void {
     name: form.name.trim(),
     startDate: form.startDate,
     dailyWorkloadHours: Number(form.dailyWorkloadHours),
+    practiceDailyHours: isApprenticeship.value ? Number(form.practiceDailyHours) : undefined,
     weekdays: [...form.weekdays],
     timeSlot: { ...form.timeSlot },
     status: form.status,
   }
 
-  const result = classGroupsStore.save(draft, { totalWorkloadHours: course.totalWorkloadHours }, props.classGroup?.id)
+  const result = classGroupsStore.save(draft, course, props.classGroup?.id)
 
   if (!result.ok) {
     if (result.conflict) {
@@ -278,7 +321,7 @@ function handleSubmit(): void {
         />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-daily-hours">Carga horária diária (horas) *</label>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-daily-hours">{{ isApprenticeship ? "Carga horária diária da teoria (horas) *" : "Carga horária diária (horas) *" }}</label>
         <input
           id="cg-daily-hours"
           v-model.number="form.dailyWorkloadHours"
@@ -292,7 +335,7 @@ function handleSubmit(): void {
     </div>
 
     <div>
-      <span class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Dias da semana *</span>
+      <span class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ isApprenticeship ? "Dias de teoria (no SENAC) *" : "Dias da semana *" }}</span>
       <div class="flex flex-wrap gap-3">
         <label
           v-for="day in ALL_WEEKDAYS"
@@ -310,8 +353,32 @@ function handleSubmit(): void {
       </div>
     </div>
 
+    <div
+      v-if="isApprenticeship"
+      class="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40"
+    >
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-practice-hours">Carga horária diária da prática (horas) *</label>
+        <input
+          id="cg-practice-hours"
+          v-model.number="form.practiceDailyHours"
+          type="number"
+          min="1"
+          step="0.5"
+          required
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:w-48"
+        />
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-400">
+        Curso de <strong>Aprendizagem</strong>: os 10 primeiros dias úteis são só de teoria; depois, os dias de teoria acima são teoria e os demais dias úteis
+        (<strong>{{ practiceWeekdays.length ? practiceWeekdays.map((d) => WEEKDAY_LABELS[d]).join(", ") : "nenhum" }}</strong>) são prática na empresa.
+        Em recesso (cadastrado em Feriados) ou quando a teoria acaba, a semana toda vira prática; quando a prática acaba, vira teoria.
+        A faixa de horário abaixo vale para a teoria.
+      </p>
+    </div>
+
     <div>
-      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-time-slot">Faixa de horário *</label>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="cg-time-slot">{{ isApprenticeship ? "Faixa de horário da teoria *" : "Faixa de horário *" }}</label>
       <select
         id="cg-time-slot"
         v-model="selectedTimeSlotKey"
@@ -340,10 +407,14 @@ function handleSubmit(): void {
 
     <div v-if="preview" class="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700">
       <p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-        Previsão de término:
+        Previsão de encerramento:
         <span class="font-semibold text-slate-900 dark:text-slate-100">{{ preview.endDate ? formatDateBr(preview.endDate) : "não foi possível calcular" }}</span>
       </p>
       <MonthlyBreakdown :breakdown="preview.monthlyBreakdown" />
+      <div v-if="unitSchedule.length > 0" class="mt-4">
+        <p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Datas por Unidade Curricular</p>
+        <UnitScheduleTable :entries="unitSchedule" />
+      </div>
     </div>
 
     <ConflictWarning v-if="conflict" :conflict="conflict" />

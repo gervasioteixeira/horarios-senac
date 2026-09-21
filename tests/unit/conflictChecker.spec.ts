@@ -222,6 +222,125 @@ describe("conflictChecker.findScheduleConflict", () => {
   })
 })
 
+describe("conflictChecker.findScheduleConflict — turmas de Aprendizagem (comparação por datas reais)", () => {
+  // Turma de Aprendizagem: vigência longa (prática até junho), mas só ocupa professor/sala nas datas de teoria.
+  const apprenticeship = makeClassGroup({
+    id: "cg-aprendizagem",
+    startDate: "2026-03-02",
+    computedEndDate: "2026-06-30",
+    weekdays: [4, 5],
+    computedClassDates: ["2026-03-02", "2026-03-03", "2026-03-19", "2026-03-20"],
+    computedPracticeDates: ["2026-03-16", "2026-03-17"],
+  })
+
+  it("detecta conflito quando a turma comum cai numa data de teoria da Aprendizagem, mesmo fora dos dias da semana da turma", () => {
+    // 02/03 é segunda: a Aprendizagem tem teoria nos 10 dias iniciais, embora seus dias de teoria "normais" sejam qui/sex.
+    const conflict = findScheduleConflict(
+      {
+        teacherId: "teacher-1",
+        startDate: "2026-03-02",
+        endDate: "2026-03-30",
+        weekdays: [1],
+        timeSlot: { start: "08:00", end: "12:00" },
+        classDates: ["2026-03-02", "2026-03-09"],
+      },
+      [apprenticeship],
+    )
+
+    expect(conflict?.kind).toBe("teacher")
+    expect(conflict?.sharedWeekdays).toEqual([1])
+  })
+
+  it("não detecta conflito em dia de PRÁTICA (na empresa), que não ocupa professor nem sala", () => {
+    const conflict = findScheduleConflict(
+      {
+        teacherId: "teacher-1",
+        roomId: "room-1",
+        startDate: "2026-03-16",
+        endDate: "2026-03-17",
+        weekdays: [1, 2],
+        timeSlot: { start: "08:00", end: "12:00" },
+        classDates: ["2026-03-16", "2026-03-17"],
+      },
+      [{ ...apprenticeship, roomId: "room-1" }],
+    )
+
+    expect(conflict).toBeNull()
+  })
+
+  it("não detecta conflito quando os horários não se sobrepõem, mesmo com datas em comum", () => {
+    const conflict = findScheduleConflict(
+      {
+        teacherId: "teacher-1",
+        startDate: "2026-03-02",
+        endDate: "2026-03-03",
+        weekdays: [1, 2],
+        timeSlot: { start: "13:00", end: "17:00" },
+        classDates: ["2026-03-02", "2026-03-03"],
+      },
+      [apprenticeship],
+    )
+
+    expect(conflict).toBeNull()
+  })
+
+  it("quando a turma em avaliação é de Aprendizagem, compara as datas dela com as de uma turma comum", () => {
+    const standard = makeClassGroup({
+      id: "cg-comum",
+      startDate: "2026-03-01",
+      computedEndDate: "2026-07-01",
+      weekdays: [1],
+      computedClassDates: ["2026-03-02", "2026-03-09", "2026-03-16"],
+    })
+
+    const conflict = findScheduleConflict(
+      {
+        teacherId: "teacher-1",
+        startDate: "2026-03-02",
+        endDate: "2026-06-30",
+        weekdays: [4, 5],
+        timeSlot: { start: "08:00", end: "12:00" },
+        classDates: ["2026-03-02", "2026-03-03"],
+        apprenticeship: true,
+      },
+      [standard],
+    )
+    expect(conflict?.conflictingClassGroup.id).toBe("cg-comum")
+
+    // Sem nenhuma data em comum (só a turma comum às segundas de 09 e 16), não há conflito.
+    const none = findScheduleConflict(
+      {
+        teacherId: "teacher-1",
+        startDate: "2026-03-03",
+        endDate: "2026-06-30",
+        weekdays: [4, 5],
+        timeSlot: { start: "08:00", end: "12:00" },
+        classDates: ["2026-03-03", "2026-03-19"],
+        apprenticeship: true,
+      },
+      [standard],
+    )
+    expect(none).toBeNull()
+  })
+
+  it("turmas comuns continuam sendo comparadas por vigência + dias da semana (comportamento anterior)", () => {
+    const standard = makeClassGroup({ weekdays: [1], computedClassDates: ["2026-02-02"] })
+    const conflict = findScheduleConflict(
+      {
+        teacherId: "teacher-1",
+        startDate: "2026-02-15",
+        endDate: "2026-05-01",
+        weekdays: [1],
+        timeSlot: { start: "08:00", end: "12:00" },
+        classDates: ["2026-02-16"], // datas informadas, mas nenhuma das turmas é de Aprendizagem
+      },
+      [standard],
+    )
+
+    expect(conflict?.kind).toBe("teacher")
+  })
+})
+
 describe("conflictChecker.findCapacityConflict", () => {
   it("detecta quando o número de alunos previstos excede a capacidade do espaço", () => {
     const room = makeRoom({ capacity: 25 })

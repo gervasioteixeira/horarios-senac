@@ -12,6 +12,7 @@ const SCOPE_LABELS: Record<Holiday["scope"], string> = {
   state: "Estadual",
   municipal: "Municipal",
   custom: "Outro",
+  recess: "Recesso escolar",
 }
 
 const showForm = ref(false)
@@ -35,7 +36,7 @@ const nationalByYear = computed(() => {
 })
 
 const sortedCustomHolidays = computed(() => {
-  return [...holidaysStore.customHolidays].sort((a, b) => a.date.localeCompare(b.date))
+  return [...holidaysStore.customHolidays, ...holidaysStore.recesses].sort((a, b) => a.date.localeCompare(b.date))
 })
 
 function generateForYear(): void {
@@ -67,7 +68,8 @@ function openEditForm(holiday: Holiday): void {
 }
 
 function handleDelete(holiday: Holiday): void {
-  if (!window.confirm(`Excluir o feriado "${holiday.name}" (${formatDateBr(holiday.date)})?`)) return
+  const period = holiday.endDate ? `${formatDateBr(holiday.date)} a ${formatDateBr(holiday.endDate)}` : formatDateBr(holiday.date)
+  if (!window.confirm(`Excluir "${holiday.name}" (${period})?`)) return
   holidaysStore.remove(holiday.id)
 }
 
@@ -122,7 +124,7 @@ function handleDelete(holiday: Holiday): void {
 
     <section class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Feriados customizados</h3>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Feriados customizados e recessos</h3>
         <button
           type="button"
           class="rounded-md bg-[#0050a0] px-4 py-2 text-sm font-medium text-white hover:bg-[#003d7a] dark:bg-[#1a6fc4] dark:hover:bg-[#0050a0]"
@@ -155,7 +157,9 @@ function handleDelete(holiday: Holiday): void {
               <td colspan="5" class="px-4 py-6 text-center text-slate-400 dark:text-slate-500">Nenhum feriado customizado cadastrado ainda.</td>
             </tr>
             <tr v-for="h in sortedCustomHolidays" :key="h.id">
-              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ formatDateBr(h.date) }}</td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                {{ formatDateBr(h.date) }}<template v-if="h.endDate"> a {{ formatDateBr(h.endDate) }}</template>
+              </td>
               <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ h.name }}</td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ SCOPE_LABELS[h.scope] }}</td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ h.recurring ? "Sim" : "Não" }}</td>

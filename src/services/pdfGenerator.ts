@@ -4,6 +4,8 @@ import type { ClassGroup, Course, Room, Teacher } from "../types"
 import { WEEKDAY_SHORT_LABELS } from "../constants/schedule"
 import { timeSlotLabel } from "../constants/schedule"
 import { USER_MANUAL_SECTIONS, USER_MANUAL_TITLE, type ManualContentBlock } from "../content/userManual"
+import { endDateDelayDays } from "./endDateForecast"
+import { computeClassGroupUnitSchedule } from "./unitSchedule"
 
 const MONTH_NAMES_PT = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -98,12 +100,21 @@ function applyFooterToAllPages(doc: jsPDF): void {
 export function generateClassGroupPdf(classGroup: ClassGroup, course: Course, teacher: Teacher, room?: Room): jsPDF {
   const doc = new jsPDF()
 
+  const isApprenticeship = classGroup.computedPracticeDates !== undefined
+  const weekdaysText = classGroup.weekdays.map((d) => WEEKDAY_SHORT_LABELS[d]).join(", ")
+
   const headerLines = [
     `Curso: ${course.name}  |  Carga horária total: ${course.totalWorkloadHours}h`,
     `Professor(a): ${teacher.name}`,
-    `Dias da semana: ${classGroup.weekdays.map((d) => WEEKDAY_SHORT_LABELS[d]).join(", ")}  |  Horário: ${timeSlotLabel(classGroup.timeSlot)}`,
-    `Início: ${formatDateBr(classGroup.startDate)}  |  Término previsto: ${formatDateBr(classGroup.computedEndDate)}`,
+    isApprenticeship
+      ? `Dias de teoria: ${weekdaysText}  |  Horário da teoria: ${timeSlotLabel(classGroup.timeSlot)}  |  Carga diária: teoria ${classGroup.dailyWorkloadHours}h, prática ${classGroup.practiceDailyHours ?? "—"}h`
+      : `Dias da semana: ${weekdaysText}  |  Horário: ${timeSlotLabel(classGroup.timeSlot)}`,
+    `Início: ${formatDateBr(classGroup.startDate)}  |  Encerramento previsto: ${formatDateBr(classGroup.computedEndDate)}`,
   ]
+  const delayDays = endDateDelayDays(classGroup)
+  if (delayDays > 0) {
+    headerLines.push(`Previsão original de encerramento: ${formatDateBr(classGroup.originalEndDate ?? null)} (adiada em ${delayDays} dia(s))`)
+  }
   if (room) {
     const studentsInfo = classGroup.expectedStudents ? ` — ${classGroup.expectedStudents} aluno(s) previstos` : ""
     headerLines.push(`Espaço: ${room.name} (capacidade: ${room.capacity})${studentsInfo}`)
@@ -121,15 +132,50 @@ export function generateClassGroupPdf(classGroup: ClassGroup, course: Course, te
 
   y = drawTableAndGetFinalY(doc, {
     startY: y + 2,
-    head: [["Mês/Ano", "Nº de aulas", "Horas"]],
-    body: classGroup.computedMonthlyBreakdown.map((entry) => [
-      `${MONTH_NAMES_PT[entry.month - 1]}/${entry.year}`,
-      String(entry.classesCount),
-      `${entry.hoursCount}h`,
-    ]),
+    head: [isApprenticeship ? ["Mês/Ano", "Aulas (teoria)", "Horas de teoria", "Dias de prática", "Horas de prática"] : ["Mês/Ano", "Nº de aulas", "Horas"]],
+    body: classGroup.computedMonthlyBreakdown.map((entry) => {
+      const row = [`${MONTH_NAMES_PT[entry.month - 1]}/${entry.year}`, String(entry.classesCount), `${entry.hoursCount}h`]
+      if (isApprenticeship) row.push(String(entry.practiceClassesCount ?? 0), `${entry.practiceHoursCount ?? 0}h`)
+      return row
+    }),
     theme: "grid",
     headStyles: { fillColor: [30, 41, 59] },
   })
+
+  if (course.units?.length) {
+    const unitSchedule = computeClassGroupUnitSchedule(
+      {
+        classDates: classGroup.computedClassDates,
+        dailyWorkloadHours: classGroup.dailyWorkloadHours,
+        practiceDates: classGroup.computedPracticeDates,
+        practiceDailyHours: classGroup.practiceDailyHours,
+      },
+      course.units,
+    )
+
+    y = drawTableAndGetFinalY(doc, {
+      startY: y + 8,
+      head: [["Unidades Curriculares"]],
+      body: [],
+      theme: "plain",
+      styles: { fontStyle: "bold" },
+    })
+
+    y = drawTableAndGetFinalY(doc, {
+      startY: y + 2,
+      head: [["UC", "Tipo", "CH", "Início", "Término"]],
+      body: unitSchedule.map((entry, index) => [
+        `${index + 1}. ${entry.unit.name}`,
+        entry.unit.kind === "practice" ? "Prática" : "Teoria",
+        `${entry.unit.workloadHours}h`,
+        formatDateBr(entry.startDate),
+        formatDateBr(entry.endDate),
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [30, 41, 59] },
+      styles: { fontSize: 9 },
+    })
+  }
 
   y = drawTableAndGetFinalY(doc, {
     startY: y + 8,
@@ -139,10 +185,19 @@ export function generateClassGroupPdf(classGroup: ClassGroup, course: Course, te
     styles: { fontStyle: "bold" },
   })
 
+  const calendarDays: Array<{ date: string; activity: string }> = [
+    ...classGroup.computedClassDates.map((date) => ({ date, activity: "Teoria" })),
+    ...(classGroup.computedPracticeDates ?? []).map((date) => ({ date, activity: "Prática (na empresa)" })),
+  ].sort((a, b) => a.date.localeCompare(b.date))
+
   drawTableAndGetFinalY(doc, {
     startY: y + 2,
-    head: [["#", "Data", "Dia da semana"]],
-    body: classGroup.computedClassDates.map((date, index) => [String(index + 1), formatDateBr(date), weekdayLabelOfDate(date)]),
+    head: [isApprenticeship ? ["#", "Data", "Dia da semana", "Atividade"] : ["#", "Data", "Dia da semana"]],
+    body: calendarDays.map(({ date, activity }, index) => {
+      const row = [String(index + 1), formatDateBr(date), weekdayLabelOfDate(date)]
+      if (isApprenticeship) row.push(activity)
+      return row
+    }),
     theme: "striped",
     headStyles: { fillColor: [30, 41, 59] },
   })
@@ -166,7 +221,7 @@ export function generateTeacherPdf(teacher: Teacher, classGroups: ClassGroup[], 
 
   drawTableAndGetFinalY(doc, {
     startY: y,
-    head: [["Turma", "Curso", "Dias", "Horário", "Início", "Término", "Status"]],
+    head: [["Turma", "Curso", "Dias", "Horário", "Início", "Encerramento previsto", "Status"]],
     body: classGroups.map((cg) => [
       cg.name,
       coursesById.get(cg.courseId)?.name ?? "—",

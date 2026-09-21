@@ -57,7 +57,7 @@ function handleDelete(course: Course): void {
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Cursos</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Cadastro de cursos e carga horária total.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Cadastro de cursos, carga horária total e Unidades Curriculares (UCs).</p>
       </div>
       <button
         type="button"
@@ -93,7 +93,12 @@ function handleDelete(course: Course): void {
           <tr v-for="course in sortedCourses" :key="course.id">
             <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ course.name }}</td>
             <td class="px-4 py-3 max-w-xs truncate text-slate-600 dark:text-slate-300" :title="course.description">{{ course.description || "—" }}</td>
-            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ course.totalWorkloadHours }}h</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+              {{ course.totalWorkloadHours }}h
+              <span v-if="course.units?.length" class="block text-xs text-slate-500 dark:text-slate-400">
+                {{ course.units.length }} UC(s)<template v-if="course.isApprenticeship"> · Aprendizagem</template>
+              </span>
+            </td>
             <td class="px-4 py-3">
               <span
                 class="rounded-full px-2 py-0.5 text-xs font-medium"

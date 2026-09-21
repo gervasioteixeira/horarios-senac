@@ -11,6 +11,15 @@ export interface ScheduleConflictCheckInput {
   endDate: string | null
   weekdays: Weekday[]
   timeSlot: Pick<TimeSlot, "start" | "end">
+  /**
+   * Datas em que a turma em avaliação ocupa professor/espaço (`computedClassDates`).
+   * Usada no lugar de "vigência + dias da semana" quando a turma em avaliação OU a
+   * comparada é de Aprendizagem — nelas, o intervalo início-fim e os dias da semana
+   * não descrevem quando há teoria (ver apprenticeshipEngine.ts).
+   */
+  classDates?: string[]
+  /** true se a turma em avaliação é de Aprendizagem. */
+  apprenticeship?: boolean
 }
 
 export type ScheduleConflictKind = "teacher" | "room"
@@ -29,6 +38,10 @@ export interface CapacityConflict {
 function timeRangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
   // Comparação de strings "HH:mm" funciona lexicograficamente como comparação de horário.
   return aStart < bEnd && bStart < aEnd
+}
+
+function weekdayOfIso(iso: string): Weekday {
+  return new Date(iso + "T00:00:00Z").getUTCDay() as Weekday
 }
 
 function dateRangesOverlap(aStart: string, aEnd: string | null, bStart: string, bEnd: string | null): boolean {
@@ -53,12 +66,25 @@ function findConflictBySameResource(
     if (other.status === "cancelled") continue
     if (resourceIdOf(other) !== candidateResourceId) continue
 
-    if (!dateRangesOverlap(candidate.startDate, candidate.endDate, other.startDate, other.computedEndDate)) {
-      continue
-    }
+    const otherIsApprenticeship = other.computedPracticeDates !== undefined
+    const compareByDates =
+      candidate.classDates !== undefined &&
+      (candidate.apprenticeship || otherIsApprenticeship) &&
+      other.computedClassDates.length > 0
 
-    const sharedWeekdays = candidate.weekdays.filter((d) => other.weekdays.includes(d))
-    if (sharedWeekdays.length === 0) continue
+    let sharedWeekdays: Weekday[]
+    if (compareByDates) {
+      const otherDates = new Set(other.computedClassDates)
+      const sharedDates = candidate.classDates!.filter((d) => otherDates.has(d))
+      if (sharedDates.length === 0) continue
+      sharedWeekdays = Array.from(new Set(sharedDates.map(weekdayOfIso))).sort((a, b) => a - b)
+    } else {
+      if (!dateRangesOverlap(candidate.startDate, candidate.endDate, other.startDate, other.computedEndDate)) {
+        continue
+      }
+      sharedWeekdays = candidate.weekdays.filter((d) => other.weekdays.includes(d))
+      if (sharedWeekdays.length === 0) continue
+    }
 
     if (!timeRangesOverlap(candidate.timeSlot.start, candidate.timeSlot.end, other.timeSlot.start, other.timeSlot.end)) {
       continue

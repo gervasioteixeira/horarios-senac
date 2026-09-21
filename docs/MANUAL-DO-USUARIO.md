@@ -55,6 +55,14 @@ Para feriados **estaduais, municipais ou pontos facultativos** (que variam por c
 
 Esses feriados também passam a ser descontados automaticamente no cálculo de qualquer turma.
 
+### Recesso escolar (período)
+
+Para um período em que não há teoria (ex: recesso de julho ou de fim de ano), escolha o tipo
+**Recesso escolar (período)** em **Novo feriado** e informe o **primeiro** e o **último** dia do
+recesso. Diferente de um feriado, o recesso **só afeta cursos de Aprendizagem**: durante o
+período não há teoria e a semana toda (segunda a sexta) vira prática. Cursos comuns ignoram
+os recessos.
+
 ## 3. Cadastrar um curso
 
 1. Vá em **Cursos**.
@@ -64,6 +72,27 @@ Esses feriados também passam a ser descontados automaticamente no cálculo de q
 
 Um curso é como um "modelo": o mesmo curso pode dar origem a várias turmas diferentes ao
 longo do tempo (ex: "Excel Básico" pode ter uma turma em janeiro de manhã e outra em março à noite).
+
+### Unidades Curriculares (UCs)
+
+Se o curso é dividido em UCs, cadastre-as no próprio formulário do curso:
+
+- **+ Adicionar UC**: informe o nome, a carga horária e o tipo (**Teoria** ou **Prática**).
+- **Importar do Word (.docx)**: carrega a lista de UCs de um documento com a tabela
+  "UC / Unidade Curricular / CH" (o mesmo formato gerado por outros sistemas). A UC
+  "Prática Profissional Supervisionada" é marcada como Prática automaticamente; confira o tipo de
+  cada UC na lista. Se a soma das UCs diferir do total declarado no documento, o sistema avisa.
+- As setas **↑ ↓** reordenam as UCs (a ordem é a ordem de execução) e **✕** remove uma UC.
+
+Com UCs cadastradas, a **carga horária total** do curso passa a ser a soma delas, e cada turma
+mostra a **data de início e de término de cada UC**. Turmas já cadastradas não são recalculadas
+automaticamente ao mudar as UCs do curso: abra a turma e salve novamente.
+
+### Curso de Aprendizagem Profissional
+
+Marque **Curso de Aprendizagem Profissional** quando o curso tiver **teoria** (no SENAC) e
+**prática** (na empresa) correndo em paralelo. É preciso ter pelo menos uma UC de Teoria e uma de
+Prática. Ao importar o documento de uma Aprendizagem, o sistema já marca essa opção.
 
 ## 4. Cadastrar um espaço (sala, laboratório, etc.)
 
@@ -95,13 +124,41 @@ que o espaço comporta.
 
 Assim que os campos principais estiverem preenchidos, o sistema mostra automaticamente:
 
-- A **data prevista de término** da turma.
+- A **previsão de encerramento** da turma.
 - Uma tabela com **quantas aulas e quantas horas** acontecem em cada mês da turma.
+- Se o curso tem UCs, a **data de início e de término de cada UC**.
 
 Esse cálculo já leva em conta os feriados cadastrados e pula automaticamente os dias da semana
 que não foram marcados.
 
 10. Clique em **Salvar**.
+
+### Previsão de encerramento e adiamentos
+
+A previsão de encerramento aparece na lista de turmas. Se uma aula for **adiada pelo calendário**
+(por exemplo, o professor faltou ou o ambiente ficou indisponível), a previsão é recalculada e a
+lista passa a mostrar **"Adiada em N dia(s)"** junto com a **previsão original**. Editar a turma
+pelo formulário ou mover a turma inteira define uma nova previsão de referência (o atraso volta
+a zero).
+
+### Turmas de Aprendizagem
+
+Quando o curso é de Aprendizagem, a turma funciona assim:
+
+- Os **dias da semana** marcados são os **dias de teoria** (no SENAC). Os demais dias úteis
+  (segunda a sexta) são de **prática** (na empresa). Ex.: teoria na quinta e sexta, prática de
+  segunda a quarta.
+- Informe também a **carga horária diária da prática**, além da carga diária da teoria.
+- A turma **sempre começa com 10 dias úteis seguidos só de teoria** (40h, que são 10% da carga
+  teórica de 400h). A partir do 11º dia, "volta ao normal": cada dia é teoria ou prática conforme
+  o dia da semana (se o 11º dia cair num dia de prática, é prática; se cair num dia de teoria,
+  é teoria).
+- Em **recesso** (cadastrado em Feriados), ou quando a **carga horária da teoria termina**, a
+  semana toda (segunda a sexta) vira **prática**. No inverso, quando a **prática termina**, a
+  semana toda vira **teoria**.
+- A **prática acontece na empresa**: ela não ocupa professor nem espaço e não gera conflito de
+  horário. Só os dias de teoria entram na checagem de conflitos.
+- A turma termina quando **teoria e prática** estão cumpridas.
 
 ### O que acontece se der conflito de horário ou de espaço
 
@@ -126,14 +183,18 @@ destacada com a cor do professor responsável — é possível alternar entre as
 Semana, Mês, Semestre e Ano**, usando os botões no topo do calendário. Use as setas para
 navegar entre os períodos.
 
+Nas turmas de Aprendizagem, os **dias de prática** (na empresa) aparecem com **borda tracejada**
+na cor do professor, para diferenciar das aulas de teoria no SENAC.
+
 ## 7. Gerar PDF
 
 Você pode baixar um PDF de duas formas:
 
 - **PDF da turma**: na lista de turmas, clique em **Baixar PDF** ao lado da turma desejada.
   O PDF traz os dados da turma (incluindo espaço e número de alunos previstos, quando
-  preenchidos), o calendário completo de aulas (data e dia da semana) e um resumo de quantas
-  horas ocorrem em cada mês.
+  preenchidos), a previsão de encerramento (e o atraso, se houve adiamento), as datas de cada
+  UC, o calendário completo de aulas (data e dia da semana) e um resumo de quantas horas
+  ocorrem em cada mês.
 - **PDF do professor**: na lista de professores, clique em **Baixar PDF** ao lado do nome.
   O PDF traz os dados do professor e a agenda consolidada de todas as turmas dele (útil para
   o professor conferir sua própria agenda, mesmo sem acessar o sistema).

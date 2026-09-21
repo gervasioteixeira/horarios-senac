@@ -33,12 +33,43 @@ export interface Teacher {
   updatedAt: string
 }
 
+/**
+ * Natureza de uma Unidade Curricular. "practice" é a prática (ex: Prática
+ * Profissional Supervisionada, feita na empresa em cursos de Aprendizagem);
+ * as demais são "theory". Só tem efeito no cronograma quando o curso é de
+ * Aprendizagem (`Course.isApprenticeship`) — ver apprenticeshipEngine.ts.
+ */
+export type CourseUnitKind = "theory" | "practice"
+
+/** Unidade Curricular (UC): uma parte do curso com nome e carga horária próprios. */
+export interface CourseUnit {
+  id: string
+  name: string
+  /** Carga horária da UC, em horas. */
+  workloadHours: number
+  kind: CourseUnitKind
+}
+
 export interface Course {
   id: string
   name: string
   description?: string
-  /** Carga horária total do curso, em horas (ex: 160). */
+  /**
+   * Carga horária total do curso, em horas (ex: 160). Quando o curso tem
+   * `units`, é sempre a soma delas (o formulário mantém os dois em sincronia).
+   */
   totalWorkloadHours: number
+  /**
+   * Curso de Aprendizagem Profissional: teoria (UCs "theory", no SENAC) e prática
+   * (UCs "practice", na empresa) correm em paralelo, com a regra dos 10 primeiros
+   * dias seguidos de teoria. Exige `units` com pelo menos uma UC de cada tipo.
+   */
+  isApprenticeship?: boolean
+  /**
+   * UCs do curso, em ordem de execução. Opcional — cursos cadastrados antes
+   * deste campo, ou sem divisão em UCs, omitem o campo.
+   */
+  units?: CourseUnit[]
   active: boolean
   createdAt: string
   updatedAt: string
@@ -56,12 +87,19 @@ export interface Room {
   updatedAt: string
 }
 
-export type HolidayScope = "national" | "state" | "municipal" | "custom"
+/**
+ * "recess" é um recesso escolar: um PERÍODO (`date` a `endDate`), não um dia
+ * de folga geral. Só afeta cursos de Aprendizagem (ver apprenticeshipEngine.ts);
+ * cursos comuns o ignoram.
+ */
+export type HolidayScope = "national" | "state" | "municipal" | "custom" | "recess"
 
 export interface Holiday {
   id: string
-  /** Data no formato "YYYY-MM-DD". */
+  /** Data no formato "YYYY-MM-DD". Para recessos (`scope: "recess"`), é o primeiro dia do período. */
   date: string
+  /** Último dia do período, "YYYY-MM-DD". Só é usado (e obrigatório) quando `scope` é "recess". */
+  endDate?: string
   name: string
   scope: HolidayScope
   /**
@@ -78,6 +116,9 @@ export interface MonthlyBreakdownEntry {
   month: number
   classesCount: number
   hoursCount: number
+  /** Só em turmas de Aprendizagem: dias e horas de prática (na empresa) no mês. `classesCount`/`hoursCount` passam a ser só a teoria. */
+  practiceClassesCount?: number
+  practiceHoursCount?: number
 }
 
 export type ClassGroupStatus = "planned" | "ongoing" | "finished" | "cancelled"
@@ -115,8 +156,11 @@ export interface ClassGroup {
   name: string
   /** Data de início no formato "YYYY-MM-DD". */
   startDate: string
-  /** Carga horária cursada por dia de aula, em horas (ex: 4). */
+  /** Carga horária cursada por dia de aula, em horas (ex: 4). Em turmas de Aprendizagem, é a carga diária da TEORIA. */
   dailyWorkloadHours: number
+  /** Só em turmas de Aprendizagem: carga horária cursada por dia de PRÁTICA (na empresa), em horas. */
+  practiceDailyHours?: number
+  /** Dias da semana de aula. Em turmas de Aprendizagem, são os dias de TEORIA; a prática ocupa os demais dias úteis (seg-sex). */
   weekdays: Weekday[]
   timeSlot: TimeSlot
   status: ClassGroupStatus
@@ -127,10 +171,22 @@ export interface ClassGroup {
    */
   postponements?: ClassPostponement[]
 
+  /**
+   * Previsão de encerramento "de referência": a `computedEndDate` de quando a
+   * turma foi salva/replanejada pela última vez (formulário ou mover turma
+   * inteira). Adiamentos pontuais NÃO a alteram — a diferença entre ela e
+   * `computedEndDate` é o atraso acumulado (ver services/endDateForecast.ts).
+   * Opcional para turmas cadastradas antes deste campo existir.
+   */
+  originalEndDate?: string | null
+
   /** Campos calculados pelo calendarEngine — recalculados a cada alteração relevante. */
   computedEndDate: string | null
   computedMonthlyBreakdown: MonthlyBreakdownEntry[]
+  /** Datas de aula. Em turmas de Aprendizagem, só as de TEORIA (presenciais no SENAC). */
   computedClassDates: string[]
+  /** Só em turmas de Aprendizagem: datas de prática (na empresa). Não ocupam professor nem espaço. */
+  computedPracticeDates?: string[]
 
   createdAt: string
   updatedAt: string

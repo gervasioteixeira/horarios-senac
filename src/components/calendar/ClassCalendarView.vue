@@ -61,29 +61,36 @@ function addMonths(date: Date, amount: number): Date {
   return result
 }
 
-/** Eventos (turma com aula) indexados por data ISO "YYYY-MM-DD". */
+interface CalendarEvent {
+  classGroupId: string
+  name: string
+  colorHex: string
+  courseName: string
+  teacherName: string
+  timeSlotText: string
+  roomName: string | null
+  /** "practice" = dia de prática na empresa (turmas de Aprendizagem): não ocupa horário nem espaço no SENAC. */
+  kind: "theory" | "practice"
+}
+
+/** Eventos (turma com aula ou prática) indexados por data ISO "YYYY-MM-DD". */
 const eventsByDate = computed(() => {
-  const map = new Map<
-    string,
-    Array<{ classGroupId: string; name: string; colorHex: string; courseName: string; teacherName: string; timeSlotText: string; roomName: string | null }>
-  >()
+  const map = new Map<string, CalendarEvent[]>()
   for (const cg of classGroupsStore.classGroups) {
     if (cg.status === "cancelled") continue
     const teacher = teachersStore.getById(cg.teacherId)
     const colorHex = teacher?.colorHex ?? "#64748b"
     const courseName = coursesStore.getById(cg.courseId)?.name ?? "Curso removido"
     const roomName = cg.roomId ? (roomsStore.getById(cg.roomId)?.name ?? "Espaço removido") : null
+    const base = { classGroupId: cg.id, name: cg.name, colorHex, courseName, teacherName: teacher?.name ?? "Professor removido" }
     for (const date of cg.computedClassDates) {
       const list = map.get(date) ?? []
-      list.push({
-        classGroupId: cg.id,
-        name: cg.name,
-        colorHex,
-        courseName,
-        teacherName: teacher?.name ?? "Professor removido",
-        timeSlotText: timeSlotLabel(cg.timeSlot),
-        roomName,
-      })
+      list.push({ ...base, timeSlotText: timeSlotLabel(cg.timeSlot), roomName, kind: "theory" })
+      map.set(date, list)
+    }
+    for (const date of cg.computedPracticeDates ?? []) {
+      const list = map.get(date) ?? []
+      list.push({ ...base, timeSlotText: "Prática (na empresa)", roomName: null, kind: "practice" })
       map.set(date, list)
     }
   }
@@ -95,10 +102,27 @@ function eventsFor(iso: string) {
 }
 
 /** Texto do tooltip nativo (title) ao passar o mouse sobre uma aula no calendário. */
-function eventTooltip(event: { name: string; courseName: string; teacherName: string; roomName: string | null }): string {
+function eventTooltip(event: CalendarEvent): string {
   const lines = [event.name, event.courseName, event.teacherName]
   if (event.roomName) lines.push(event.roomName)
+  if (event.kind === "practice") lines.push("Prática (na empresa)")
   return lines.join("\n")
+}
+
+/**
+ * Aula (teoria) é um bloco cheio na cor do professor; dia de prática é um bloco
+ * com borda tracejada e fundo translúcido na mesma cor, para não parecer aula no SENAC.
+ * Cores dinâmicas por :style porque o Tailwind não gera classes para hex arbitrário em runtime.
+ */
+function eventStyle(event: CalendarEvent): Record<string, string> {
+  if (event.kind === "practice") {
+    return { border: `1.5px dashed ${event.colorHex}`, backgroundColor: `${event.colorHex}26` }
+  }
+  return { backgroundColor: event.colorHex }
+}
+
+function eventTextClass(event: CalendarEvent): string {
+  return event.kind === "practice" ? "text-slate-700 dark:text-slate-100" : "text-white"
 }
 
 // ---------- Reagendar aula: tocar/clicar numa aula (só nas visões Semana e Mês) ----------
@@ -122,7 +146,7 @@ const rescheduleConflict = ref<{ conflict?: ScheduleConflict; capacityConflict?:
 /** Aviso simples de ação inválida (ex: adiamento pontual escolhido para uma data não posterior). */
 const rescheduleWarning = ref<string | null>(null)
 
-function onEventTap(event: { classGroupId: string; name: string; courseName: string }, fromDate: string): void {
+function onEventTap(event: CalendarEvent, fromDate: string): void {
   actionTarget.value = { classGroupId: event.classGroupId, eventName: event.name, courseName: event.courseName, fromDate }
 }
 
@@ -310,7 +334,7 @@ function buildMiniMonths(startMonth: number, count: number): MiniMonth[] {
     const daysInMonth = new Date(y, m + 1, 0).getDate()
     let eventCount = 0
     for (let day = 1; day <= daysInMonth; day++) {
-      eventCount += eventsFor(toIso(new Date(y, m, day))).length
+      eventCount += eventsFor(toIso(new Date(y, m, day))).filter((e) => e.kind === "theory").length
     }
     months.push({ year: y, month: m, label: `${MONTH_NAMES[m]} de ${y}`, eventCount })
   }
@@ -386,8 +410,11 @@ const periodLabel = computed(() => {
         Nenhuma aula neste dia.
       </div>
       <ul v-else class="divide-y divide-slate-100 dark:divide-slate-700">
-        <li v-for="event in eventsFor(dayIso)" :key="event.classGroupId" class="flex items-center gap-3 p-3">
-          <span class="h-3 w-3 shrink-0 rounded-full border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: event.colorHex }" />
+        <li v-for="event in eventsFor(dayIso)" :key="`${event.classGroupId}-${event.kind}`" class="flex items-center gap-3 p-3">
+          <span
+            class="h-3 w-3 shrink-0 rounded-full border border-slate-300 dark:border-slate-600"
+            :style="event.kind === 'practice' ? { border: `2px dashed ${event.colorHex}` } : { backgroundColor: event.colorHex }"
+          />
           <div>
             <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ event.name }}</p>
             <p class="text-xs text-slate-500 dark:text-slate-400">{{ event.courseName }}</p>
@@ -414,10 +441,11 @@ const periodLabel = computed(() => {
           <div class="flex flex-col gap-1">
             <button
               v-for="event in eventsFor(cell.iso)"
-              :key="event.classGroupId"
+              :key="`${event.classGroupId}-${event.kind}`"
               type="button"
-              class="rounded px-1.5 py-1 text-left text-[11px] font-medium text-white"
-              :style="{ backgroundColor: event.colorHex }"
+              class="rounded px-1.5 py-1 text-left text-[11px] font-medium"
+              :class="eventTextClass(event)"
+              :style="eventStyle(event)"
               :title="eventTooltip(event)"
               @click="onEventTap(event, cell.iso)"
             >
@@ -447,10 +475,11 @@ const periodLabel = computed(() => {
           <div class="flex flex-col gap-1">
             <button
               v-for="event in eventsFor(cell.iso)"
-              :key="event.classGroupId"
+              :key="`${event.classGroupId}-${event.kind}`"
               type="button"
-              class="truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white"
-              :style="{ backgroundColor: event.colorHex }"
+              class="truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium"
+              :class="eventTextClass(event)"
+              :style="eventStyle(event)"
               :title="eventTooltip(event)"
               @click="onEventTap(event, cell.iso)"
             >
